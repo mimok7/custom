@@ -66,8 +66,8 @@ export default function MyPage() {
         <SectionBox title="메뉴">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link href="/mypage/direct-booking" className="block p-4 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 transition">
-              <div className="text-lg font-semibold text-blue-800">직접 예약</div>
-              <p className="text-sm text-blue-600 mt-1">크루즈, 공항, 호텔, 투어, 렌터카 예약</p>
+              <div className="text-lg font-semibold text-blue-800">예약하기</div>
+              <p className="text-sm text-blue-600 mt-1">크루즈, 공항, 호텔, 투어, 렌터카 등 예약</p>
             </Link>
             <Link href="/mypage/reservations/list" className="block p-4 rounded-lg border border-green-200 bg-green-50 hover:bg-green-100 transition">
               <div className="text-lg font-semibold text-green-800">예약 확인</div>
