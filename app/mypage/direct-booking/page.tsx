@@ -41,6 +41,8 @@ function DirectBookingContent() {
     const [showPackageInfoModal, setShowPackageInfoModal] = useState(false);
     const [showTicketInfoModal, setShowTicketInfoModal] = useState(false);
     const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
+    const [isSubmittingAll, setIsSubmittingAll] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     useEffect(() => {
         const initializePage = async () => {
@@ -369,6 +371,71 @@ function DirectBookingContent() {
         }
     };
 
+    const handleSubmitAllReservations = async () => {
+        if (isSubmittingAll) return;
+        if (!activeQuoteId || !user?.id) {
+            setSubmitError('활성 예약이 없습니다. 먼저 새 예약을 생성해 주세요.');
+            return;
+        }
+
+        setSubmitError(null);
+        setIsSubmittingAll(true);
+
+        try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshData.session) {
+                setSubmitError('세션이 만료되었습니다. 다시 로그인해 주세요.');
+                router.push('/login');
+                return;
+            }
+
+            const { data: existingReservations, error: reservationError } = await supabase
+                .from('reservation')
+                .select('re_id')
+                .eq('re_user_id', user.id)
+                .eq('re_quote_id', activeQuoteId)
+                .limit(1);
+
+            if (reservationError) {
+                throw reservationError;
+            }
+
+            if (!existingReservations || existingReservations.length === 0) {
+                setSubmitError('아직 신청할 서비스가 없습니다. 서비스 입력을 먼저 완료해 주세요.');
+                return;
+            }
+
+            const idempotencyKey = `${activeQuoteId}:${Date.now()}`;
+            const { error: rpcError } = await supabase.rpc('submit_all_reservations_phase1', {
+                p_user_id: user.id,
+                p_quote_id: activeQuoteId,
+                p_idempotency_key: idempotencyKey,
+                p_payload: { source: 'direct-booking-page' },
+            });
+
+            if (rpcError) {
+                // SQL이 아직 반영되지 않은 환경을 위한 안전 폴백
+                const { error: quoteUpdateError } = await supabase
+                    .from('quote')
+                    .update({ submitted_at: new Date().toISOString() })
+                    .eq('id', activeQuoteId)
+                    .eq('user_id', user.id);
+
+                if (quoteUpdateError) {
+                    throw quoteUpdateError;
+                }
+            }
+
+            alert('전체 예약 신청이 접수되었습니다. 관리자 확인 후 순차 진행됩니다.');
+            await loadCompletedServices(activeQuoteId);
+        } catch (submitErr: any) {
+            logger.error('❌ 전체 예약 신청 실패:', submitErr);
+            setSubmitError(submitErr?.message || '전체 예약 신청 중 오류가 발생했습니다.');
+        } finally {
+            setIsSubmittingAll(false);
+        }
+    };
+
     // 서비스 링크 생성 함수
     const getServiceHref = (service: any) => {
         // 모든 서비스는 항상 접근 가능 (견적 ID가 있으면 전달, 없으면 새로 생성)
@@ -592,6 +659,12 @@ function DirectBookingContent() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {submitError && (
+                <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded-lg text-sm text-red-700">
+                    {submitError}
                 </div>
             )}
 
@@ -1449,6 +1522,13 @@ function DirectBookingContent() {
                                                 예약 변경
                                             </button>
                                         )}
+                                        <button
+                                            onClick={handleSubmitAllReservations}
+                                            disabled={isSubmittingAll || !activeQuoteId}
+                                            className="bg-indigo-500 text-white px-3 py-1 rounded text-sm hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed whitespace-nowrap"
+                                        >
+                                            {isSubmittingAll ? '신청 중...' : '전체 예약 신청'}
+                                        </button>
                                         <button
                                             onClick={createNewBooking}
                                             className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 whitespace-nowrap"
