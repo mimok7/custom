@@ -7,6 +7,7 @@ import { getSessionUser, refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { useLoadingTimeout } from '@/hooks/useLoadingTimeout';
 import PageWrapper from '@/components/PageWrapper';
 import SectionBox from '@/components/SectionBox';
+import { getDraftStorageKey, type DraftEnvelope } from '@/lib/bookingDraftMapper';
 
 function TourDirectBookingContent() {
     const router = useRouter();
@@ -280,6 +281,47 @@ function TourDirectBookingContent() {
                 alert('세션이 만료되었습니다. 페이지를 새로고침 해주세요.');
                 return;
             }
+
+            if (!quoteId) {
+                alert('활성 견적이 없습니다. 직접예약 메인에서 새 예약을 먼저 생성해 주세요.');
+                return;
+            }
+
+            // 닌빈투어 request_note 구성
+            let requestNote = formData.special_requests;
+            if (isNinhBinhTour) {
+                const ninhBinhOptions = [
+                    `[점심식사] ${formData.lunch_option}`,
+                    `[투어 코스] ${formData.tour_course}`,
+                    `[포코 호아루 야경 투어] ${formData.night_tour}`
+                ].join(' /');
+                requestNote = requestNote ? `${ninhBinhOptions}\n\n${requestNote}` : ninhBinhOptions;
+            }
+
+            const draftPayload = {
+                formData,
+                selectedTour,
+                matchedPricing,
+                guestCount,
+                finalPrice,
+                totalPrice: finalPrice * guestCount,
+                requestNote,
+                isEditMode,
+                existingReservationId,
+            };
+
+            const draftEnvelope: DraftEnvelope<typeof draftPayload> = {
+                quoteId,
+                userId: user.id,
+                serviceType: 'tour',
+                payload: draftPayload,
+                updatedAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem(getDraftStorageKey(quoteId, 'tour'), JSON.stringify(draftEnvelope));
+            alert('투어 입력 내용이 임시 저장되었습니다. 상단 "전체 예약 신청" 버튼으로 최종 신청해 주세요.');
+            router.push('/mypage/direct-booking?completed=tour');
+            return;
 
             // 닌빈투어 request_note 구성
             let requestNote = formData.special_requests;

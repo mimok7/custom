@@ -7,6 +7,7 @@ import { getSessionUser, refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { useLoadingTimeout } from '@/hooks/useLoadingTimeout';
 import PageWrapper from '@/components/PageWrapper';
 import SectionBox from '@/components/SectionBox';
+import { getDraftStorageKey, type DraftEnvelope } from '@/lib/bookingDraftMapper';
 
 interface VehicleData {
     id: number;
@@ -370,6 +371,32 @@ function RentcarDirectBookingContent() {
                 alert('세션이 만료되었습니다. 페이지를 새로고침 해주세요.');
                 return;
             }
+
+            if (!quoteId) {
+                alert('활성 견적이 없습니다. 직접예약 메인에서 새 예약을 먼저 생성해 주세요.');
+                return;
+            }
+
+            const draftPayload = {
+                vehicles,
+                requestNote,
+                isEditMode,
+                existingReservationId,
+                existingRentcarIds,
+            };
+
+            const draftEnvelope: DraftEnvelope<typeof draftPayload> = {
+                quoteId,
+                userId: user.id,
+                serviceType: 'rentcar',
+                payload: draftPayload,
+                updatedAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem(getDraftStorageKey(quoteId, 'rentcar'), JSON.stringify(draftEnvelope));
+            alert('렌터카 입력 내용이 임시 저장되었습니다. 상단 "전체 예약 신청" 버튼으로 최종 신청해 주세요.');
+            router.push('/mypage/direct-booking?completed=rentcar');
+            return;
 
             const buildRentcarData = (vehicle: VehicleData, reservationId: string) => {
                 const isRoundTrip = ROUND_TRIP_TYPES.includes(vehicle.wayType);

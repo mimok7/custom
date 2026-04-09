@@ -8,6 +8,7 @@ import { getExchangeRate, vndToKrw } from '../../../../lib/exchangeRate';
 import { useLoadingTimeout } from '../../../../hooks/useLoadingTimeout';
 import PageWrapper from '../../../../components/PageWrapper';
 import SectionBox from '../../../../components/SectionBox';
+import { getDraftStorageKey, type DraftEnvelope } from '../../../../lib/bookingDraftMapper';
 
 interface FastTrackInsertTarget {
     id: string;
@@ -584,6 +585,37 @@ function DirectBookingAirportContent() {
                 alert('로그인이 필요합니다.');
                 return;
             }
+
+            if (!quoteId) {
+                alert('활성 견적이 없습니다. 직접예약 메인에서 새 예약을 먼저 생성해 주세요.');
+                return;
+            }
+
+            const draftPayload = {
+                form,
+                price1,
+                price2,
+                vndRateToKrw,
+                usdRateToKrw,
+                fastTrackByWay,
+                fastTrackApplicantNamesByWay,
+                isEditMode,
+                existingReservationId,
+                existingAirportIds,
+            };
+
+            const draftEnvelope: DraftEnvelope<typeof draftPayload> = {
+                quoteId,
+                userId: user.id,
+                serviceType: 'airport',
+                payload: draftPayload,
+                updatedAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem(getDraftStorageKey(quoteId, 'airport'), JSON.stringify(draftEnvelope));
+            alert('공항 서비스 입력 내용이 임시 저장되었습니다. 상단 "전체 예약 신청" 버튼으로 최종 신청해 주세요.');
+            router.push('/mypage/direct-booking?completed=airport');
+            return;
 
             // 사용자 역할 및 정보 업데이트
             const { data: existingUser } = await supabase

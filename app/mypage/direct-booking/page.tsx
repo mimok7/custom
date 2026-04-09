@@ -8,6 +8,8 @@ import supabase from '@/lib/supabase';
 import { getSessionUser } from '@/lib/authHelpers';
 import logger from '../../../lib/logger';
 import { Home } from 'lucide-react';
+import { getDraftStorageKey, type DraftEnvelope, type DraftServiceType } from '@/lib/bookingDraftMapper';
+import { submitAllDraftReservations } from '@/lib/submitAllReservations';
 
 function DirectBookingContent() {
     const router = useRouter();
@@ -43,6 +45,7 @@ function DirectBookingContent() {
     const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
     const [isSubmittingAll, setIsSubmittingAll] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const draftServiceTypes: DraftServiceType[] = ['cruise', 'airport', 'hotel', 'rentcar', 'tour'];
 
     useEffect(() => {
         const initializePage = async () => {
@@ -133,18 +136,40 @@ function DirectBookingContent() {
                 .eq('re_quote_id', quoteId)
                 .order('re_created_at', { ascending: false });
 
+            const dbCompletedTypes: string[] = reservations
+                ? [...new Set<string>(reservations.map(r => String(r.re_type || '')))].filter(Boolean)
+                : [];
+
+            const draftCompletedTypes: string[] = draftServiceTypes.filter((serviceType) => {
+                if (!quoteId) return false;
+                const raw = localStorage.getItem(getDraftStorageKey(quoteId, serviceType));
+                if (!raw) return false;
+                try {
+                    const parsed = JSON.parse(raw) as DraftEnvelope;
+                    return parsed?.quoteId === quoteId && parsed?.userId === user.id;
+                } catch {
+                    return false;
+                }
+            });
+
+            const mergedTypes = [...new Set<string>([...dbCompletedTypes, ...draftCompletedTypes])];
+            setCompletedServices(mergedTypes);
+
+            // 서비스별 상태 맵 (DB 상태 우선, draft는 보조 상태)
+            const statusMap: Record<string, string> = {};
             if (reservations) {
-                const completedTypes: string[] = [...new Set<string>(reservations.map(r => String(r.re_type || '')))].filter(Boolean);
-                setCompletedServices(completedTypes);
-                // 서비스별 예약 상태 맵 구성 (approved/pending 등)
-                const statusMap: Record<string, string> = {};
                 reservations.forEach(r => {
                     if (!statusMap[r.re_type]) {
                         statusMap[r.re_type] = r.re_status;
                     }
                 });
-                setReservationStatusMap(statusMap);
             }
+            draftCompletedTypes.forEach((serviceType) => {
+                if (!statusMap[serviceType]) {
+                    statusMap[serviceType] = 'draft';
+                }
+            });
+            setReservationStatusMap(statusMap);
         } catch (error) {
             logger.error('완료된 서비스 로드 실패:', error);
         }
@@ -391,18 +416,46 @@ function DirectBookingContent() {
 
             const { data: existingReservations, error: reservationError } = await supabase
                 .from('reservation')
-                .select('re_id')
+                .select('re_id, re_type')
                 .eq('re_user_id', user.id)
                 .eq('re_quote_id', activeQuoteId)
-                .limit(1);
+                .limit(100);
 
             if (reservationError) {
                 throw reservationError;
             }
 
-            if (!existingReservations || existingReservations.length === 0) {
+            const existingTypes = new Set(
+                (existingReservations || []).map((row) => String(row.re_type || '')).filter(Boolean)
+            );
+
+            const draftEnvelopes: DraftEnvelope[] = draftServiceTypes.flatMap((serviceType) => {
+                const raw = localStorage.getItem(getDraftStorageKey(activeQuoteId, serviceType));
+                if (!raw) return [];
+                try {
+                    const parsed = JSON.parse(raw) as DraftEnvelope;
+                    if (parsed?.quoteId === activeQuoteId && parsed?.userId === user.id) {
+                        return [parsed];
+                    }
+                    return [];
+                } catch {
+                    return [];
+                }
+            });
+
+            const toSubmit = draftEnvelopes.filter((envelope) => !existingTypes.has(envelope.serviceType));
+
+            if (toSubmit.length === 0 && (!existingReservations || existingReservations.length === 0)) {
                 setSubmitError('아직 신청할 서비스가 없습니다. 서비스 입력을 먼저 완료해 주세요.');
                 return;
+            }
+
+            if (toSubmit.length > 0) {
+                const submitResult = await submitAllDraftReservations(toSubmit);
+                if (submitResult.errors.length > 0) {
+                    setSubmitError(`일부 서비스 신청 실패: ${submitResult.errors.join(', ')}`);
+                    return;
+                }
             }
 
             const idempotencyKey = `${activeQuoteId}:${Date.now()}`;
@@ -425,6 +478,10 @@ function DirectBookingContent() {
                     throw quoteUpdateError;
                 }
             }
+
+            toSubmit.forEach((envelope) => {
+                localStorage.removeItem(getDraftStorageKey(activeQuoteId, envelope.serviceType));
+            });
 
             alert('전체 예약 신청이 접수되었습니다. 관리자 확인 후 순차 진행됩니다.');
             await loadCompletedServices(activeQuoteId);
