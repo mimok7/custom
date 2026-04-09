@@ -13,6 +13,7 @@ import {
     SelectedTourOption,
     formatVND,
 } from '../../../../lib/cruisePriceCalculator';
+import { getDraftStorageKey, type DraftEnvelope } from '../../../../lib/bookingDraftMapper';
 
 const calculator = new CruisePriceCalculator(supabase);
 
@@ -1240,6 +1241,38 @@ function DirectBookingCruiseContent() {
                 setIsShtCarModalOpen(true);
                 return;
             }
+
+            if (!quoteId) {
+                alert('활성 견적이 없습니다. 직접예약 메인에서 새 예약을 먼저 생성해 주세요.');
+                return;
+            }
+
+            const draftPayload = {
+                form,
+                roomSelections,
+                priceResult,
+                vehicleForm,
+                selectedTourOptions,
+                childExtraBedBirthDates,
+                selectedShtSeat,
+                isEditMode,
+                existingReservationId,
+                existingCruiseId,
+                existingVehicleReservationId,
+            };
+
+            const draftEnvelope: DraftEnvelope<typeof draftPayload> = {
+                quoteId,
+                userId: user.id,
+                serviceType: 'cruise',
+                payload: draftPayload,
+                updatedAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem(getDraftStorageKey(quoteId, 'cruise'), JSON.stringify(draftEnvelope));
+            alert('크루즈 입력 내용이 임시 저장되었습니다. 상단 "전체 예약 신청" 버튼으로 최종 신청해 주세요.');
+            router.push('/mypage/direct-booking?completed=cruise');
+            return;
 
             // 사용자 역할 업데이트
             const { data: existingUser } = await supabase
