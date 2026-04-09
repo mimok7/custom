@@ -10,6 +10,7 @@ import { clearCachedUser } from '@/lib/authCache';
 export default function MyPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +20,20 @@ export default function MyPage() {
         return;
       }
       setUser(user);
+      
+      // 사용자 프로필 조회
+      supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setUserProfile(data);
+          }
+        })
+        .catch((err) => console.warn('프로필 조회 실패:', err));
+
       setLoading(false);
     });
   }, [router]);
@@ -40,6 +55,14 @@ export default function MyPage() {
   return (
     <PageWrapper title="마이페이지">
       <div className="max-w-2xl mx-auto space-y-4">
+        {/* 환영 인사 */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold">
+            {userProfile?.name || user?.email?.split('@')[0]} 님 환영합니다! 👋
+          </h2>
+          <p className="text-blue-100 mt-2">스테이하롱 예약 시스템에 오셨습니다.</p>
+        </div>
+
         <SectionBox title="메뉴">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link href="/mypage/direct-booking" className="block p-4 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 transition">
