@@ -45,7 +45,7 @@ function DirectBookingContent() {
     const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
     const [isSubmittingAll, setIsSubmittingAll] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const draftServiceTypes: DraftServiceType[] = ['cruise', 'airport', 'hotel', 'rentcar', 'tour'];
+    const draftServiceTypes: DraftServiceType[] = ['cruise', 'airport', 'hotel', 'rentcar', 'tour', 'package', 'ticket'];
 
     useEffect(() => {
         const initializePage = async () => {

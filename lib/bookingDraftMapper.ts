@@ -1,4 +1,4 @@
-export type DraftServiceType = 'cruise' | 'airport' | 'hotel' | 'rentcar' | 'tour';
+export type DraftServiceType = 'cruise' | 'airport' | 'hotel' | 'rentcar' | 'tour' | 'package' | 'ticket';
 
 export interface DraftEnvelope<T = unknown> {
   quoteId: string;
