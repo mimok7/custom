@@ -85,6 +85,12 @@ function StepperNumberInput({
     onChange: (value: number) => void;
     className?: string;
 }) {
+    const [inputValue, setInputValue] = useState<string>(String(value ?? min));
+
+    useEffect(() => {
+        setInputValue(String(value ?? min));
+    }, [value, min]);
+
     const clamp = (next: number) => {
         if (Number.isNaN(next)) return min;
         let v = next;
@@ -93,33 +99,44 @@ function StepperNumberInput({
         return v;
     };
 
+    const commitValue = (raw: string) => {
+        if (raw.trim() === '') {
+            const normalized = clamp(min);
+            onChange(normalized);
+            setInputValue(String(normalized));
+            return;
+        }
+
+        const parsed = parseInt(raw, 10);
+        const normalized = clamp(Number.isNaN(parsed) ? min : parsed);
+        onChange(normalized);
+        setInputValue(String(normalized));
+    };
+
     return (
-        <div className={`flex items-center border border-gray-300 rounded-md overflow-hidden bg-white ${className}`}>
-            <button
-                type="button"
-                onClick={() => onChange(clamp((value || 0) - 1))}
-                className="w-10 h-10 md:h-[42px] bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
-                aria-label="감소"
-            >
-                ▼
-            </button>
+        <div className={`border border-gray-300 rounded-md bg-white ${className}`}>
             <input
-                type="number"
-                min={min}
-                max={max}
-                value={value || ''}
-                onChange={(e) => onChange(clamp(parseInt(e.target.value, 10) || 0))}
-                className="flex-1 px-2 py-2 text-center border-0 focus:ring-0"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={inputValue}
+                onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                        setInputValue('');
+                        return;
+                    }
+                    if (!/^\d+$/.test(raw)) return;
+
+                    const normalized = clamp(parseInt(raw, 10));
+                    onChange(normalized);
+                    setInputValue(String(normalized));
+                }}
+                onBlur={(e) => commitValue(e.target.value)}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full px-2 py-2 text-center border-0 focus:ring-0"
                 placeholder={placeholder}
             />
-            <button
-                type="button"
-                onClick={() => onChange(clamp((value || 0) + 1))}
-                className="w-10 h-10 md:h-[42px] bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold border-l border-gray-300"
-                aria-label="증가"
-            >
-                ▲
-            </button>
         </div>
     );
 }
