@@ -1573,27 +1573,29 @@ function DirectBookingContent() {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {quotesList.length > 1 && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex flex-wrap gap-2">
+                                            {quotesList.length > 1 && (
+                                                <button
+                                                    onClick={() => setShowQuoteSelector(true)}
+                                                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 whitespace-nowrap"
+                                                >
+                                                    예약 변경
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => setShowQuoteSelector(true)}
-                                                className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 whitespace-nowrap"
+                                                onClick={createNewBooking}
+                                                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 whitespace-nowrap"
                                             >
-                                                예약 변경
+                                                + 새 예약
                                             </button>
-                                        )}
+                                        </div>
                                         <button
                                             onClick={handleSubmitAllReservations}
                                             disabled={isSubmittingAll || !activeQuoteId}
                                             className="bg-indigo-500 text-white px-3 py-1 rounded text-sm hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed whitespace-nowrap"
                                         >
                                             {isSubmittingAll ? '신청 중...' : '전체 예약 신청'}
-                                        </button>
-                                        <button
-                                            onClick={createNewBooking}
-                                            className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 whitespace-nowrap"
-                                        >
-                                            + 새 예약
                                         </button>
                                     </div>
                                 </div>
