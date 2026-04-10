@@ -1599,7 +1599,7 @@ function DirectBookingContent() {
                                             disabled={isSubmittingAll || !activeQuoteId}
                                             className="bg-indigo-500 text-white px-3 py-1 rounded text-sm hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed whitespace-nowrap"
                                         >
-                                            {isSubmittingAll ? '신청 중...' : '전체 예약 신청'}
+                                            {isSubmittingAll ? '신청 중...' : '예약 신청'}
                                         </button>
                                     </div>
                                 </div>

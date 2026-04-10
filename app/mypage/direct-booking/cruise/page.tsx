@@ -2670,7 +2670,7 @@ function DirectBookingCruiseContent() {
                                 disabled={loading || !priceResult}
                                 className="px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-gray-400"
                             >
-                                {loading ? '예약 중...' : isEditMode ? (priceResult ? '수정 완료' : '객실을 선택하세요') : (priceResult ? '예약 완료' : '객실을 선택하세요')}
+                                {loading ? '예약 중...' : isEditMode ? (priceResult ? '수정 완료' : '객실을 선택하세요') : (priceResult ? '임시저장' : '객실을 선택하세요')}
                             </button>
                         </div>
                     </form>

@@ -793,7 +793,7 @@ function RentcarDirectBookingContent() {
                             disabled={loading}
                             className="px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                            {loading ? '처리 중...' : isEditMode ? '수정 완료' : '예약 완료'}
+                            {loading ? '처리 중...' : isEditMode ? '수정 완료' : '임시저장'}
                         </button>
                     </div>
                 </form>
