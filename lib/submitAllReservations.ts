@@ -86,10 +86,12 @@ async function saveCruiseDetail(reservationId: string, payload: any): Promise<st
       noteParts.push('아동엑베 생년월일: ' + childExtraBedBirthDates.join(', '));
     }
 
-    // reservation_cruise 테이블 컬럼에 맞게 INSERT (price_breakdown 컬럼 없음)
+    // reservation_cruise 테이블 컬럼에 맞게 INSERT
+    // NOT NULL 컬럼: reservation_id, room_price_code, checkin, guest_count, unit_price
+    const totalGuestCount = totalAdultCount + totalChildCount + totalInfantCount;
     const { error } = await supabase.from('reservation_cruise').insert({
       reservation_id: reservationId,
-      room_price_code: priceResult?.primary_rate_card?.id || null,
+      room_price_code: priceResult?.primary_rate_card?.id || '',
       adult_count: totalAdultCount,
       child_count: totalChildCount,
       child_extra_bed_count: totalChildExtraBedCount,
@@ -97,7 +99,9 @@ async function saveCruiseDetail(reservationId: string, payload: any): Promise<st
       extra_bed_count: totalExtraBedCount,
       single_count: totalSingleCount,
       room_count: totalRoomCount,
-      checkin: form.checkin || null,
+      guest_count: totalGuestCount || 1,
+      unit_price: priceResult?.primary_rate_card?.price || priceResult?.unit_price || 0,
+      checkin: form.checkin || new Date().toISOString().slice(0, 10),
       request_note: noteParts.join('\n') || null,
       connecting_room: form.connecting_room || false,
       birthday_event: form.birthday_event || false,
