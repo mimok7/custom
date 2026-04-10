@@ -43,8 +43,13 @@ export default function SignupPage() {
       console.log('✅ Auth 회원가입 성공:', authData.user.id);
       console.log('ℹ️ users 테이블 등록은 예약 시점에 처리됩니다.');
 
-      // 즉시 리다이렉트
-      router.push('/mypage');
+      // 로딩 상태 명시적으로 해제 후 리다이렉트 (페이지 전환 전에 상태 업데이트 완료)
+      setLoading(false);
+      
+      // 약간의 딜레이 후 리다이렉트 (상태 업데이트가 확실히 적용되도록)
+      setTimeout(() => {
+        router.push('/mypage');
+      }, 300);
     } catch (error: any) {
       console.error('❌ 회원가입 실패:', error);
 
@@ -59,7 +64,6 @@ export default function SignupPage() {
       }
 
       alert(errorMessage);
-    } finally {
       setLoading(false);
     }
   };
