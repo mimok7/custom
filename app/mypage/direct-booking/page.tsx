@@ -451,7 +451,20 @@ function DirectBookingContent() {
             }
 
             if (toSubmit.length > 0) {
-                const submitResult = await submitAllDraftReservations(toSubmit);
+                const submitResult = await submitAllDraftReservations(
+                    toSubmit,
+                    (existingReservations || []).map((r) => ({ re_id: r.re_id, re_type: String(r.re_type || '') })),
+                );
+                if (submitResult.errors.length > 0) {
+                    setSubmitError(`일부 서비스 신청 실패: ${submitResult.errors.join(', ')}`);
+                    return;
+                }
+            } else if (existingReservations && existingReservations.length > 0) {
+                // 고아 reservation 복구 시도 (메인 행만 있고 상세 없는 경우)
+                const submitResult = await submitAllDraftReservations(
+                    draftEnvelopes,
+                    (existingReservations || []).map((r) => ({ re_id: r.re_id, re_type: String(r.re_type || '') })),
+                );
                 if (submitResult.errors.length > 0) {
                     setSubmitError(`일부 서비스 신청 실패: ${submitResult.errors.join(', ')}`);
                     return;
