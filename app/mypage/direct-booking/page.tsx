@@ -470,7 +470,11 @@ function DirectBookingContent() {
                 // SQL이 아직 반영되지 않은 환경을 위한 안전 폴백
                 const { error: quoteUpdateError } = await supabase
                     .from('quote')
-                    .update({ submitted_at: new Date().toISOString() })
+                    .update({
+                        status: 'submitted',
+                        submitted_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    })
                     .eq('id', activeQuoteId)
                     .eq('user_id', user.id);
 
