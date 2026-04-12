@@ -99,8 +99,8 @@ export default function TicketBookingPage() {
         requestNote: noteLines.join('\n'),
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
-      alert('티켓 예약이 완료되었습니다!');
-      router.push('/mypage/reservations/list');
+      alert('티켓 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
+      router.push('/mypage/direct-booking');
     } finally {
       setSubmitting(false);
     }
@@ -134,7 +134,7 @@ export default function TicketBookingPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">수량</label>
-                <input type="number" min={1} value={ticketQuantity} onChange={(e) => setTicketQuantity(Number(e.target.value) || 1)} />
+                <input type="number" min={1} value={ticketQuantity || ''} onChange={(e) => setTicketQuantity(e.target.value === '' ? 0 : Number(e.target.value))} />
               </div>
             </div>
           </SectionBox>
@@ -177,7 +177,7 @@ export default function TicketBookingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">수량</label>
-              <input type="number" min={1} value={ticketQuantity} onChange={(e) => setTicketQuantity(Number(e.target.value) || 1)} />
+              <input type="number" min={1} value={ticketQuantity || ''} onChange={(e) => setTicketQuantity(e.target.value === '' ? 0 : Number(e.target.value))} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">상세 내용</label>

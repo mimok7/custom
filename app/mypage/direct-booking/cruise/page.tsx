@@ -21,7 +21,7 @@ import {
 } from '@/lib/cruisePriceCalculator';
 import { submitReservation } from '@/lib/submitReservation';
 import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
-import { ChevronDown, Plus, Trash2, Ship } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, Ship, Car } from 'lucide-react';
 
 interface RoomSelection {
   localId: string;
@@ -64,6 +64,23 @@ export default function CruiseBookingPage() {
   const [birthdayEvent, setBirthdayEvent] = useState(false);
   const [birthdayName, setBirthdayName] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
+
+  /* ── 차량 예약 상태 ── */
+  const [addCar, setAddCar] = useState(false);
+  const [carCategory, setCarCategory] = useState('');
+  const [carRoute, setCarRoute] = useState('');
+  const [carType, setCarType] = useState('');
+  const [carCount, setCarCount] = useState(1);
+  const [routeOptions, setRouteOptions] = useState<string[]>([]);
+  const [carTypeOptions, setCarTypeOptions] = useState<string[]>([]);
+  const [carCode, setCarCode] = useState('');
+
+  /* ── 이용방식 (일정에 따라 필터) ── */
+  const carCategories = useMemo(() => {
+    const base = ['편도', '당일왕복', '다른날왕복'];
+    if (['1박2일', '2박3일'].includes(schedule)) return base.filter((c) => c !== '당일왕복');
+    return base;
+  }, [schedule]);
 
   /* ── 옵션 데이터 ── */
   const [cruiseOptions, setCruiseOptions] = useState<string[]>([]);
@@ -144,6 +161,55 @@ export default function CruiseBookingPage() {
 
   useEffect(() => { recalculate(); }, [recalculate]);
 
+  /* ── 차량 경로 로드 ── */
+  useEffect(() => {
+    if (!carCategory) { setRouteOptions([]); setCarTypeOptions([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('rentcar_price')
+        .select('route')
+        .eq('way_type', carCategory)
+        .like('route', '%하롱베이%');
+      const routes = [...new Set((data ?? []).map((d: Record<string, unknown>) => d.route as string))];
+      setRouteOptions(routes);
+      setCarRoute('');
+      setCarType('');
+      setCarCode('');
+    })();
+  }, [carCategory]);
+
+  /* ── 차량 타입 로드 ── */
+  useEffect(() => {
+    if (!carCategory || !carRoute) { setCarTypeOptions([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('rentcar_price')
+        .select('vehicle_type')
+        .eq('way_type', carCategory)
+        .eq('route', carRoute);
+      const types = [...new Set((data ?? []).map((d: Record<string, unknown>) => d.vehicle_type as string))];
+      setCarTypeOptions(types);
+      setCarType('');
+      setCarCode('');
+    })();
+  }, [carCategory, carRoute]);
+
+  /* ── 차량 코드 로드 ── */
+  useEffect(() => {
+    if (!carCategory || !carRoute || !carType) { setCarCode(''); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('rentcar_price')
+        .select('rent_code')
+        .eq('way_type', carCategory)
+        .eq('route', carRoute)
+        .eq('vehicle_type', carType)
+        .limit(1)
+        .maybeSingle();
+      setCarCode((data as Record<string, unknown>)?.rent_code as string ?? '');
+    })();
+  }, [carCategory, carRoute, carType]);
+
   /* ── 객실 CRUD ── */
   const updateRoom = (idx: number, patch: Partial<RoomSelection>) => {
     setRoomSelections((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
@@ -172,10 +238,11 @@ export default function CruiseBookingPage() {
         roomSelections,
         priceResult: priceResults[0] ?? {},
         selectedTourOptions: selectedTourOpts,
+        carData: addCar && carCode ? { car_category: carCategory, car_route: carRoute, car_type: carType, car_code: carCode, car_count: carCount } : null,
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
-      alert('크루즈 예약이 완료되었습니다!');
-      router.push('/mypage/reservations/list');
+      alert('크루즈 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
+      router.push('/mypage/direct-booking');
     } finally {
       setSubmitting(false);
     }
@@ -232,7 +299,7 @@ export default function CruiseBookingPage() {
                 {(['adult_count', 'child_count', 'child_extra_bed_count', 'infant_count', 'extra_bed_count', 'single_count', 'room_count'] as const).map((field) => (
                   <div key={field}>
                     <label className="text-xs text-gray-500">{({ adult_count: '성인', child_count: '아동', child_extra_bed_count: '아동(엑스트라)', infant_count: '유아', extra_bed_count: '엑스트라 베드', single_count: '싱글 차지', room_count: '객실 수' })[field]}</label>
-                    <input type="number" min={field === 'room_count' ? 1 : 0} value={room[field]} onChange={(e) => updateRoom(idx, { [field]: Number(e.target.value) || 0 })} />
+                    <input type="number" min={field === 'room_count' ? 1 : 0} value={room[field] || ''} onChange={(e) => updateRoom(idx, { [field]: e.target.value === '' ? 0 : Number(e.target.value) })} />
                   </div>
                 ))}
               </div>
@@ -258,7 +325,7 @@ export default function CruiseBookingPage() {
             return (
               <div key={opt.option_id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <span className="text-sm">{opt.option_name} ({formatVND(opt.option_price)})</span>
-                <input type="number" min={0} className="w-20" value={sel?.quantity ?? 0}
+                <input type="number" min={0} className="w-20" value={sel?.quantity || ''}
                   onChange={(e) => {
                     const qty = Number(e.target.value) || 0;
                     setSelectedTourOpts((prev) => {
@@ -272,6 +339,45 @@ export default function CruiseBookingPage() {
           })}
         </SectionBox>
       )}
+
+      {/* 차량 예약 */}
+      <SectionBox title="크루즈 차량">
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />
+            <Car className="w-4 h-4 text-gray-500" />크루즈 차량 예약 추가
+          </label>
+          {addCar && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 border rounded-lg p-4 bg-green-50">
+              <div>
+                <label className="text-sm text-gray-600">이용방식</label>
+                <select value={carCategory} onChange={(e) => setCarCategory(e.target.value)}>
+                  <option value="">선택</option>
+                  {carCategories.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600">경로</label>
+                <select value={carRoute} onChange={(e) => setCarRoute(e.target.value)} disabled={!routeOptions.length}>
+                  <option value="">선택</option>
+                  {routeOptions.map((r) => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600">차량 타입</label>
+                <select value={carType} onChange={(e) => setCarType(e.target.value)} disabled={!carTypeOptions.length}>
+                  <option value="">선택</option>
+                  {carTypeOptions.map((t) => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600">{carType.includes('셔틀') && !carType.includes('단독') ? '인원수' : '차량 대수'}</label>
+                <input type="number" min={1} value={carCount || ''} onChange={(e) => setCarCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+              </div>
+            </div>
+          )}
+        </div>
+      </SectionBox>
 
       {/* 추가 옵션 */}
       <SectionBox title="추가 옵션">
@@ -298,34 +404,7 @@ export default function CruiseBookingPage() {
         </div>
       </SectionBox>
 
-      {/* 가격 요약 */}
-      {grandTotal > 0 && (
-        <SectionBox title="가격 요약">
-          {priceResults.map((result, idx) => result && (
-            <div key={idx} className="mb-3 last:mb-0">
-              <h4 className="text-sm font-medium text-gray-700 mb-1">{roomSelections[idx]?.room_type || `객실 ${idx + 1}`}</h4>
-              <div className="text-sm text-gray-600 space-y-0.5">
-                {result.line_items.map((li, i) => (
-                  <div key={i} className="flex justify-between">
-                    <span>{li.label} × {li.count}</span>
-                    <span>{formatVND(li.subtotal)}</span>
-                  </div>
-                ))}
-                {result.surcharge_items.map((si, i) => (
-                  <div key={`s${i}`} className="flex justify-between text-orange-600">
-                    <span>{si.label} ({si.date}){!si.is_confirmed && ' (미확정)'}</span>
-                    <span>{formatVND(si.subtotal)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <div className="border-t pt-3 mt-3 flex justify-between text-base font-semibold">
-            <span>총 합계</span>
-            <span className="text-blue-600">{formatVND(grandTotal)}</span>
-          </div>
-        </SectionBox>
-      )}
+
 
       {/* 제출 */}
       <div className="flex justify-end gap-3 mt-4">

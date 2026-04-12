@@ -130,6 +130,62 @@ export async function saveCruiseDetail(
         .eq('re_id', reservationId);
     }
 
+    /* ── 크루즈 차량 저장 ── */
+    const carData = payload.carData as Record<string, unknown> | null;
+    if (carData && carData.car_code) {
+      const isShuttle = String(carData.car_type ?? '').includes('셔틀') && !String(carData.car_type ?? '').includes('단독');
+      const inputCount = Number(carData.car_count) || 1;
+
+      // 차량 가격 조회
+      const { data: carPriceData } = await supabase
+        .from('rentcar_price')
+        .select('*')
+        .eq('rent_code', carData.car_code)
+        .maybeSingle();
+
+      const unitPrice = Number((carPriceData as Record<string, unknown>)?.price ?? 0);
+      const totalPrice = unitPrice * inputCount;
+
+      // 차량 전용 reservation 생성
+      const { data: user } = await supabase.auth.getUser();
+      if (user?.user) {
+        const { data: carRes } = await supabase.from('reservation').insert({
+          re_user_id: user.user.id,
+          re_type: 'car',
+          re_status: 'pending',
+          total_amount: totalPrice,
+        }).select('re_id').single();
+
+        if (carRes) {
+          // 반환일 계산
+          let returnDatetime: string | null = null;
+          const carCat = String(carData.car_category ?? '');
+          if (carCat === '당일왕복') {
+            returnDatetime = form?.checkin as string ?? null;
+          } else if (carCat === '다른날왕복') {
+            const rd = new Date(form?.checkin as string ?? '');
+            rd.setDate(rd.getDate() + (form?.schedule === '2박3일' ? 2 : 1));
+            returnDatetime = rd.toISOString().split('T')[0];
+          }
+
+          await supabase.from('reservation_cruise_car').insert({
+            reservation_id: carRes.re_id,
+            car_price_code: carData.car_code,
+            way_type: carData.car_category,
+            route: carData.car_route,
+            vehicle_type: carData.car_type,
+            car_count: isShuttle ? 0 : inputCount,
+            passenger_count: isShuttle ? inputCount : 0,
+            pickup_datetime: form?.checkin ?? null,
+            pickup_location: form?.pickup_location ?? null,
+            return_datetime: returnDatetime,
+            unit_price: unitPrice,
+            car_total_price: totalPrice,
+          });
+        }
+      }
+    }
+
     return null;
   } catch (err: unknown) {
     return `reservation_cruise 예외: ${err instanceof Error ? err.message : String(err)}`;

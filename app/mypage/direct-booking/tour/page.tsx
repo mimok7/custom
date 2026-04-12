@@ -119,8 +119,8 @@ export default function TourBookingPage() {
         requestNote: noteLines.join('\n'),
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
-      alert('투어 예약이 완료되었습니다!');
-      router.push('/mypage/reservations/list');
+      alert('투어 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
+      router.push('/mypage/direct-booking');
     } finally {
       setSubmitting(false);
     }
@@ -142,7 +142,7 @@ export default function TourBookingPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">인원</label>
-            <input type="number" min={1} value={guestCount} onChange={(e) => setGuestCount(Number(e.target.value) || 1)} />
+            <input type="number" min={1} value={guestCount || ''} onChange={(e) => setGuestCount(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
         </div>
       </SectionBox>
@@ -197,17 +197,7 @@ export default function TourBookingPage() {
         <textarea rows={3} value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} placeholder="추가 요청사항을 입력하세요" />
       </SectionBox>
 
-      {totalPrice > 0 && (
-        <SectionBox title="가격">
-          <div className="space-y-1 text-sm text-gray-600">
-            <div className="flex justify-between"><span>1인 가격</span><span>{unitPrice.toLocaleString()} VND</span></div>
-            <div className="flex justify-between"><span>인원</span><span>{guestCount}명</span></div>
-          </div>
-          <div className="border-t mt-2 pt-2 text-right text-lg font-semibold text-blue-600">
-            {totalPrice.toLocaleString()} VND
-          </div>
-        </SectionBox>
-      )}
+
 
       <div className="flex justify-end gap-3 mt-4">
         <button className="btn btn-secondary" onClick={() => router.back()}>취소</button>

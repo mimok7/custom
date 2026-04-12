@@ -138,8 +138,8 @@ export default function RentcarBookingPage() {
       await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('rentcar', { vehicles, requestNote });
       if (error) { alert(`예약 오류: ${error}`); return; }
-      alert('렌터카 예약이 완료되었습니다!');
-      router.push('/mypage/reservations/list');
+      alert('렌터카 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
+      router.push('/mypage/direct-booking');
     } finally {
       setSubmitting(false);
     }
@@ -187,7 +187,7 @@ export default function RentcarBookingPage() {
               </div>
               <div>
                 <label className="text-sm text-gray-600">대수</label>
-                <input type="number" min={1} value={v.car_count} onChange={(e) => updateVehicle(idx, { car_count: Number(e.target.value) || 1 })} />
+                <input type="number" min={1} value={v.car_count || ''} onChange={(e) => updateVehicle(idx, { car_count: e.target.value === '' ? 0 : Number(e.target.value) })} />
               </div>
             </div>
 
@@ -199,7 +199,7 @@ export default function RentcarBookingPage() {
               </div>
               <div>
                 <label className="text-sm text-gray-600">탑승 인원</label>
-                <input type="number" min={1} value={v.passenger_count} onChange={(e) => updateVehicle(idx, { passenger_count: Number(e.target.value) || 1 })} />
+                <input type="number" min={1} value={v.passenger_count || ''} onChange={(e) => updateVehicle(idx, { passenger_count: e.target.value === '' ? 0 : Number(e.target.value) })} />
               </div>
               <div>
                 <label className="text-sm text-gray-600">출발 장소 (영문)</label>
@@ -229,7 +229,7 @@ export default function RentcarBookingPage() {
                 </div>
                 <div>
                   <label className="text-sm text-gray-600">수하물 수</label>
-                  <input type="number" min={0} value={v.luggage_count} onChange={(e) => updateVehicle(idx, { luggage_count: Number(e.target.value) || 0 })} />
+                  <input type="number" min={0} value={v.luggage_count || ''} onChange={(e) => updateVehicle(idx, { luggage_count: e.target.value === '' ? 0 : Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="text-sm text-gray-600">복귀 출발지</label>
@@ -257,11 +257,7 @@ export default function RentcarBookingPage() {
         <textarea rows={3} value={requestNote} onChange={(e) => setRequestNote(e.target.value)} placeholder="추가 요청사항을 입력하세요" />
       </SectionBox>
 
-      {totalPrice > 0 && (
-        <SectionBox title="총 가격">
-          <div className="text-right text-lg font-semibold text-blue-600">{totalPrice.toLocaleString()} VND</div>
-        </SectionBox>
-      )}
+
 
       <div className="flex justify-end gap-3 mt-4">
         <button className="btn btn-secondary" onClick={() => router.back()}>취소</button>

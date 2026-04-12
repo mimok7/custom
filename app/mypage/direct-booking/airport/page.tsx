@@ -177,8 +177,8 @@ export default function AirportBookingPage() {
         price2,
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
-      alert('공항 이동 예약이 완료되었습니다!');
-      router.push('/mypage/reservations/list');
+      alert('공항 이동 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
+      router.push('/mypage/direct-booking');
     } finally {
       setSubmitting(false);
     }
@@ -256,11 +256,11 @@ export default function AirportBookingPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">탑승 인원</label>
-              <input type="number" min={1} value={passengerCount} onChange={(e) => setPassengerCount(Number(e.target.value) || 1)} />
+              <input type="number" min={1} value={passengerCount || ''} onChange={(e) => setPassengerCount(e.target.value === '' ? 0 : Number(e.target.value))} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">수하물 수</label>
-              <input type="number" min={0} value={luggageCount} onChange={(e) => setLuggageCount(Number(e.target.value) || 0)} />
+              <input type="number" min={0} value={luggageCount || ''} onChange={(e) => setLuggageCount(e.target.value === '' ? 0 : Number(e.target.value))} />
             </div>
           </div>
 
@@ -286,14 +286,7 @@ export default function AirportBookingPage() {
         </div>
       </SectionBox>
 
-      {/* 가격 */}
-      {totalPrice > 0 && (
-        <SectionBox title="가격">
-          <div className="text-right text-lg font-semibold text-blue-600">
-            {totalPrice.toLocaleString()} VND
-          </div>
-        </SectionBox>
-      )}
+
 
       {/* 제출 */}
       <div className="flex justify-end gap-3 mt-4">

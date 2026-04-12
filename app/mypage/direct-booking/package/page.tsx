@@ -87,8 +87,8 @@ export default function PackageBookingPage() {
         additionalRequests,
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
-      alert('패키지 예약이 완료되었습니다!');
-      router.push('/mypage/reservations/list');
+      alert('패키지 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
+      router.push('/mypage/direct-booking');
     } finally {
       setSubmitting(false);
     }
@@ -160,31 +160,31 @@ export default function PackageBookingPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="text-sm text-gray-600">성인</label>
-            <input type="number" min={1} value={adults} onChange={(e) => setAdults(Number(e.target.value) || 1)} />
+            <input type="number" min={1} value={adults || ''} onChange={(e) => setAdults(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div>
             <label className="text-sm text-gray-600">아동 (엑스트라베드)</label>
-            <input type="number" min={0} value={childExtraBed} onChange={(e) => setChildExtraBed(Number(e.target.value) || 0)} />
+            <input type="number" min={0} value={childExtraBed || ''} onChange={(e) => setChildExtraBed(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div>
             <label className="text-sm text-gray-600">아동 (베드 미사용)</label>
-            <input type="number" min={0} value={childNoExtraBed} onChange={(e) => setChildNoExtraBed(Number(e.target.value) || 0)} />
+            <input type="number" min={0} value={childNoExtraBed || ''} onChange={(e) => setChildNoExtraBed(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div>
             <label className="text-sm text-gray-600">유아 (무료)</label>
-            <input type="number" min={0} value={infantFree} onChange={(e) => setInfantFree(Number(e.target.value) || 0)} />
+            <input type="number" min={0} value={infantFree || ''} onChange={(e) => setInfantFree(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div>
             <label className="text-sm text-gray-600">유아 (투어)</label>
-            <input type="number" min={0} value={infantTour} onChange={(e) => setInfantTour(Number(e.target.value) || 0)} />
+            <input type="number" min={0} value={infantTour || ''} onChange={(e) => setInfantTour(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div>
             <label className="text-sm text-gray-600">유아 (엑스트라베드)</label>
-            <input type="number" min={0} value={infantExtraBed} onChange={(e) => setInfantExtraBed(Number(e.target.value) || 0)} />
+            <input type="number" min={0} value={infantExtraBed || ''} onChange={(e) => setInfantExtraBed(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div>
             <label className="text-sm text-gray-600">유아 (카시트)</label>
-            <input type="number" min={0} value={infantSeat} onChange={(e) => setInfantSeat(Number(e.target.value) || 0)} />
+            <input type="number" min={0} value={infantSeat || ''} onChange={(e) => setInfantSeat(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
         </div>
         <p className="text-sm text-gray-500 mt-2">총 인원: {totalGuests}명</p>
@@ -195,19 +195,7 @@ export default function PackageBookingPage() {
         <textarea rows={3} value={additionalRequests} onChange={(e) => setAdditionalRequests(e.target.value)} placeholder="추가 요청사항을 입력하세요" />
       </SectionBox>
 
-      {/* 가격 */}
-      {totalPrice > 0 && (
-        <SectionBox title="가격 안내">
-          <div className="space-y-1 text-sm text-gray-600">
-            <div className="flex justify-between"><span>성인 단가</span><span>{(selectedPackage?.base_price ?? 0).toLocaleString()} VND</span></div>
-            <div className="flex justify-between"><span>성인 인원</span><span>{adults}명</span></div>
-          </div>
-          <div className="border-t mt-2 pt-2 text-right text-lg font-semibold text-blue-600">
-            {totalPrice.toLocaleString()} VND
-          </div>
-          <p className="text-xs text-gray-400 mt-1">* 아동/유아 요금은 별도 안내됩니다.</p>
-        </SectionBox>
-      )}
+
 
       <div className="flex justify-end gap-3 mt-4">
         <button className="btn btn-secondary" onClick={() => router.back()}>취소</button>
