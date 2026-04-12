@@ -122,7 +122,7 @@ export default function ReservationViewPage() {
             .from(table)
             .select('*')
             .eq('reservation_id', id);
-          if (det) setDetails(det);
+          if (det) setDetails(det as DetailRow[]);
         }
       } finally {
         setLoading(false);
@@ -153,23 +153,24 @@ export default function ReservationViewPage() {
         </div>
       </SectionBox>
 
-      {/* 서비스 상세 */}
-      {details.map((detail, idx) => (
-        <SectionBox key={idx} title={`서비스 상세${details.length > 1 ? ` #${idx + 1}` : ''}`}>
-          <div className="space-y-2 text-sm">
-            {Object.entries(fieldLabels).map(([key, label]) => {
-              const val = detail[key];
-              if (val === null || val === undefined || val === '') return null;
-              return (
-                <div key={key} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
-                  <span className="text-gray-500">{label}</span>
-                  <span className="text-gray-900 text-right max-w-[60%] break-words">{formatValue(key, val)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </SectionBox>
-      ))}
+      <div>
+        {(details as DetailRow[]).map((detail, idx) => (
+          <SectionBox key={idx} title={`서비스 상세${details.length > 1 ? ` #${idx + 1}` : ''}`}>
+            <div className="space-y-2 text-sm">
+              {Object.entries(fieldLabels).map(([key, label]) => {
+                const val = detail[key];
+                if (val === null || val === undefined || val === '') return null;
+                return (
+                  <div key={key} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
+                    <span className="text-gray-500">{label}</span>
+                    <span className="text-gray-900 text-right max-w-[60%] break-words">{formatValue(key, val)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionBox>
+        ))}
+      </div>
 
       {/* price_breakdown */}
       {reservation.price_breakdown && (
