@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import PageWrapper from '@/components/layout/PageWrapper';
 import SectionBox from '@/components/layout/SectionBox';
@@ -32,33 +31,32 @@ const STATUS_BADGE: Record<string, { bg: string; label: string }> = {
 export default function ReservationListPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [filterType, setFilterType] = useState<string>('all');
 
   const { data: reservations, isLoading } = useReservations(user?.id ?? '');
   const { data: additionalData } = useReservationAdditionalData(reservations ?? []);
 
-  const filtered = useMemo(() => {
-    if (!reservations) return [];
-    const sorted = [...reservations].sort(
-      (a, b) => new Date(b.re_created_at).getTime() - new Date(a.re_created_at).getTime(),
-    );
-    if (filterType === 'all') return sorted;
-    return sorted.filter((r) => r.re_type === filterType);
-  }, [reservations, filterType]);
+  const filtered = (reservations ?? []).sort((a, b) => {
+    const typeOrder: Record<string, number> = {
+      cruise: 1,
+      airport: 2,
+      tour: 3,
+      rentcar: 4,
+      hotel: 5,
+      package: 6,
+      package_tour: 6,
+      ticket: 7,
+    };
+    const orderA = typeOrder[a.re_type] ?? 99;
+    const orderB = typeOrder[b.re_type] ?? 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return new Date(b.re_created_at).getTime() - new Date(a.re_created_at).getTime();
+  });
 
   if (authLoading || isLoading) return <Spinner className="h-72" />;
   if (!user) { router.replace('/login'); return null; }
 
   return (
     <PageWrapper title="예약 내역" description="예약 목록을 확인하세요">
-      {/* 필터 */}
-      <div className="flex gap-2 flex-wrap mb-4">
-        <button className={`btn text-xs ${filterType === 'all' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setFilterType('all')}>전체</button>
-        {Object.entries(SERVICE_META).map(([key, { label }]) => (
-          <button key={key} className={`btn text-xs ${filterType === key ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setFilterType(key)}>{label}</button>
-        ))}
-      </div>
-
       {filtered.length === 0 ? (
         <EmptyState message="예약 내역이 없습니다" />
       ) : (
