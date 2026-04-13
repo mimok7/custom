@@ -125,23 +125,23 @@ export default function ReservationViewPage() {
             .eq('reservation_id', id);
           
           if (det) {
-            // 크루즈 예약인 경우 room_price_code로 크루즈명과 객실타입 조인
-            if (res.re_type === 'cruise' && det[0]?.room_price_code) {
-              const { data: roomPrices } = await supabase
-                .from('room_price')
-                .select('cruise_id, room_type(*)')
-                .eq('room_price_code', det[0].room_price_code)
-                .single();
-              
-              if (roomPrices) {
-                const { data: cruiseInfo } = await supabase
-                  .from('cruise_info')
-                  .select('cruise_name')
-                  .eq('cruise_id', roomPrices.cruise_id)
-                  .single();
-                
-                det[0].cruise_room_info = `${cruiseInfo?.cruise_name || ''} ${roomPrices.room_type?.room_type_name || ''}`.trim();
-              }
+            // 크루즈 예약인 경우 room_price_code는 cruise_rate_card.id를 저장하므로 해당 테이블에서 매칭
+            if (res.re_type === 'cruise') {
+              await Promise.all(
+                det.map(async (row) => {
+                  if (!row.room_price_code) return;
+
+                  const { data: rateCard } = await supabase
+                    .from('cruise_rate_card')
+                    .select('cruise_name, room_type')
+                    .eq('id', row.room_price_code)
+                    .maybeSingle();
+
+                  if (rateCard) {
+                    row.cruise_room_info = `${rateCard.cruise_name || ''} ${rateCard.room_type || ''}`.trim();
+                  }
+                }),
+              );
             }
             setDetails(det as DetailRow[]);
           }
@@ -197,7 +197,6 @@ export default function ReservationViewPage() {
                   {checkin && <div><span className="font-semibold text-blue-600">체크인</span>: {checkin}</div>}
                   <div><span className="font-semibold text-blue-600">크루즈명</span>: {cruiseName || '-'}</div>
                   <div><span className="font-semibold text-blue-600">객실명</span>: {roomName || '-'}</div>
-                  {guestCount ? <div><span className="font-semibold text-blue-600">인원</span>: {guestCount}</div> : null}
                   {adultCount ? <div><span className="font-semibold text-blue-600">성인</span>: {adultCount}</div> : null}
                   {roomCount ? <div><span className="font-semibold text-blue-600">객실 수</span>: {roomCount}</div> : null}
                   {unitPrice ? <div><span className="font-semibold text-blue-600">객실 단가</span>: 성인({unitPrice.toLocaleString()} VND) × {adultCount} = {(adultPrice).toLocaleString()} VND</div> : null}
