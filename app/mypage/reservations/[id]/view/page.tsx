@@ -195,8 +195,8 @@ export default function ReservationViewPage() {
               <SectionBox key={idx} title="서비스 상세">
                 <div className="space-y-2 text-sm">
                   {checkin && <div><span className="font-semibold text-blue-600">체크인</span>: {checkin}</div>}
-                  {cruiseName && <div><span className="font-semibold text-blue-600">크루즈명</span>: {cruiseName}</div>}
-                  {roomName && <div><span className="font-semibold text-blue-600">객실명</span>: {roomName}</div>}
+                  <div><span className="font-semibold text-blue-600">크루즈명</span>: {cruiseName || '-'}</div>
+                  <div><span className="font-semibold text-blue-600">객실명</span>: {roomName || '-'}</div>
                   {guestCount ? <div><span className="font-semibold text-blue-600">인원</span>: {guestCount}</div> : null}
                   {adultCount ? <div><span className="font-semibold text-blue-600">성인</span>: {adultCount}</div> : null}
                   {roomCount ? <div><span className="font-semibold text-blue-600">객실 수</span>: {roomCount}</div> : null}
