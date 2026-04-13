@@ -38,7 +38,7 @@ const DETAIL_TABLE: Record<string, string> = {
 
 const FIELD_LABELS: Record<string, Record<string, string>> = {
   cruise: {
-    room_price_code: '객실 코드', checkin: '체크인', guest_count: '인원',
+    cruise_room_info: '객실', checkin: '체크인', guest_count: '인원',
     adult_count: '성인', child_count: '아동', infant_count: '유아',
     room_count: '객실 수', room_total_price: '총 가격', request_note: '요청사항',
     connecting_room: '커넥팅 룸', birthday_event: '생일 이벤트',
@@ -49,12 +49,12 @@ const FIELD_LABELS: Record<string, Record<string, string>> = {
     accommodation_info: '숙소 정보', unit_price: '단가', total_price: '총 가격',
   },
   hotel: {
-    hotel_price_code: '호텔 코드', schedule: '일정', checkin_date: '체크인',
+    schedule: '일정', checkin_date: '체크인',
     room_count: '객실 수', guest_count: '인원', unit_price: '단가',
     total_price: '총 가격', request_note: '요청사항',
   },
   tour: {
-    tour_price_code: '투어 코드', usage_date: '투어 날짜', tour_capacity: '인원',
+    usage_date: '투어 날짜', tour_capacity: '인원',
     pickup_location: '픽업', dropoff_location: '드롭', unit_price: '단가',
     total_price: '총 가격', request_note: '요청사항',
   },
@@ -65,21 +65,22 @@ const FIELD_LABELS: Record<string, Record<string, string>> = {
     request_note: '요청사항',
   },
   ticket: {
-    tour_price_code: '티켓 코드', usage_date: '이용 날짜', tour_capacity: '수량',
+    usage_date: '이용 날짜', tour_capacity: '수량',
     pickup_location: '픽업', unit_price: '단가', total_price: '총 가격',
     request_note: '상세',
   },
   package: {
-    package_id: '패키지', adult_count: '성인', child_extra_bed: '아동(엑스트라)',
+    adult_count: '성인', child_extra_bed: '아동(엑스트라)',
     child_no_extra_bed: '아동(미사용)', infant_free: '유아(무료)',
     total_price: '총 가격', additional_requests: '요청사항',
   },
 };
 
-function formatValue(key: string, value: unknown): string {
-  if (value === null || value === undefined) return '-';
-  if (typeof value === 'boolean') return value ? '✅ 예' : '❌ 아니오';
+function formatValue(key: string, value: unknown): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'boolean') return value ? '✅ 예' : null; // false(아니오) 숨김
   if (typeof value === 'number') {
+    if (value === 0) return null; // 0 값 숨김
     if (key.includes('price') || key.includes('total') || key === 'unit_price')
       return `${value.toLocaleString()} VND`;
     return String(value);
@@ -122,7 +123,28 @@ export default function ReservationViewPage() {
             .from(table)
             .select('*')
             .eq('reservation_id', id);
-          if (det) setDetails(det as DetailRow[]);
+          
+          if (det) {
+            // 크루즈 예약인 경우 room_price_code로 크루즈명과 객실타입 조인
+            if (res.re_type === 'cruise' && det[0]?.room_price_code) {
+              const { data: roomPrices } = await supabase
+                .from('room_price')
+                .select('cruise_id, room_type(*)')
+                .eq('room_price_code', det[0].room_price_code)
+                .single();
+              
+              if (roomPrices) {
+                const { data: cruiseInfo } = await supabase
+                  .from('cruise_info')
+                  .select('cruise_name')
+                  .eq('cruise_id', roomPrices.cruise_id)
+                  .single();
+                
+                det[0].cruise_room_info = `${cruiseInfo?.cruise_name || ''} ${roomPrices.room_type?.room_type_name || ''}`.trim();
+              }
+            }
+            setDetails(det as DetailRow[]);
+          }
         }
       } finally {
         setLoading(false);
@@ -145,25 +167,25 @@ export default function ReservationViewPage() {
 
       {/* 기본 정보 */}
       <SectionBox title="예약 정보">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div><span className="text-gray-500">예약 ID</span><p className="font-mono text-xs">{id}</p></div>
-          <div><span className="text-gray-500">상태</span><p><span className={`badge ${status.bg}`}>{status.label}</span></p></div>
-          <div><span className="text-gray-500">서비스</span><p>{SERVICE_LABELS[serviceType]}</p></div>
-          <div><span className="text-gray-500">생성일</span><p>{formatKst(reservation.re_created_at as string)}</p></div>
+        <div className="space-y-2 text-sm">
+          <div><span className="font-semibold text-blue-600">상태</span><span className="ml-1">:</span> <span className={`badge ${status.bg}`}>{status.label}</span></div>
+          <div><span className="font-semibold text-blue-600">생성일</span><span className="ml-1">:</span> <span>{formatKst(reservation.re_created_at as string)}</span></div>
         </div>
       </SectionBox>
 
       <div>
         {(details as DetailRow[]).map((detail, idx) => (
           <SectionBox key={idx} title={`서비스 상세${details.length > 1 ? ` #${idx + 1}` : ''}`}>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 text-sm">
               {Object.entries(fieldLabels).map(([key, label]) => {
                 const val = detail[key];
-                if (val === null || val === undefined || val === '') return null;
+                const formatted = formatValue(key, val);
+                if (formatted === null) return null;
                 return (
-                  <div key={key} className="flex justify-between py-1 border-b border-gray-100 last:border-0">
-                    <span className="text-gray-500">{label}</span>
-                    <span className="text-gray-900 text-right max-w-[60%] break-words">{formatValue(key, val)}</span>
+                  <div key={key} className="flex flex-col sm:flex-row sm:justify-between">
+                    <span className="font-semibold text-blue-600">{label}</span>
+                    <span className="ml-0 sm:ml-1">:</span>
+                    <span className="text-gray-900 break-words">{formatted}</span>
                   </div>
                 );
               })}
@@ -172,14 +194,6 @@ export default function ReservationViewPage() {
         ))}
       </div>
 
-      {/* price_breakdown */}
-      {reservation.price_breakdown && (
-        <SectionBox title="가격 상세">
-          <pre className="text-xs text-gray-600 overflow-x-auto bg-gray-50 p-3 rounded">
-            {JSON.stringify(reservation.price_breakdown, null, 2)}
-          </pre>
-        </SectionBox>
-      )}
     </PageWrapper>
   );
 }
