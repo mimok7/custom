@@ -32,7 +32,13 @@ export default function ReservationListPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const { data: reservations, isLoading } = useReservations(user?.id ?? '');
+  const {
+    data: reservations,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useReservations((user?.id as string) ?? '');
   const { data: additionalData } = useReservationAdditionalData(reservations ?? []);
 
   const filtered = (reservations ?? []).sort((a, b) => {
@@ -41,6 +47,26 @@ export default function ReservationListPage() {
 
   if (authLoading || isLoading) return <Spinner className="h-72" />;
   if (!user) { router.replace('/login'); return null; }
+
+  if (isError) {
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : '예약 목록을 불러오지 못했습니다.';
+
+    return (
+      <PageWrapper title="예약 내역" description="예약 목록을 확인하세요">
+        <SectionBox title="조회 실패">
+          <div className="space-y-3">
+            <p className="text-sm text-red-600">{message}</p>
+            <button className="btn btn-primary text-xs" onClick={() => refetch()}>
+              다시 시도
+            </button>
+          </div>
+        </SectionBox>
+      </PageWrapper>
+    );
+  }
 
   return (
     <PageWrapper title="예약 내역" description="예약 목록을 확인하세요">

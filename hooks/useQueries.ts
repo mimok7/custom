@@ -1,17 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import supabase from '@/lib/supabase';
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 15000): Promise<T> {
+  return Promise.race<T>([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('요청 시간이 초과되었습니다.')), timeoutMs);
+    }),
+  ]);
+}
+
 /** 예약 목록 조회 */
 export function useReservations(userId: string | undefined) {
   return useQuery({
     queryKey: ['reservations', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase
-        .from('reservation')
-        .select('re_id,re_type,re_status,re_created_at,re_quote_id')
-        .eq('re_user_id', userId)
-        .order('re_created_at', { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from('reservation')
+          .select('re_id,re_type,re_status,re_created_at,re_quote_id')
+          .eq('re_user_id', userId)
+          .order('re_created_at', { ascending: false }),
+      );
       if (error) throw error;
       return data ?? [];
     },

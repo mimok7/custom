@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
-import { isInvalidRefreshTokenError, clearInvalidSession } from '@/lib/authHelpers';
+import { isInvalidRefreshTokenError, clearInvalidSession, getSessionUser } from '@/lib/authHelpers';
 import { queryClient } from '@/lib/queryClient';
 
 interface AuthState {
@@ -90,10 +90,7 @@ export function useAuth(
           return;
         }
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        const { user, error: userError } = await getSessionUser(12000);
         if (cancelled) return;
 
         if (userError || !user) {
@@ -212,10 +209,7 @@ export function useAuth(
     setState((prev) => ({ ...prev, loading: true }));
 
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { user, error: userError } = await getSessionUser(12000);
       if (userError || !user) {
         if (userError && isInvalidRefreshTokenError(userError)) {
           await clearInvalidSession();
