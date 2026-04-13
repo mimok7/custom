@@ -36,19 +36,6 @@ export default function ReservationListPage() {
   const { data: additionalData } = useReservationAdditionalData(reservations ?? []);
 
   const filtered = (reservations ?? []).sort((a, b) => {
-    const typeOrder: Record<string, number> = {
-      cruise: 1,
-      airport: 2,
-      tour: 3,
-      rentcar: 4,
-      hotel: 5,
-      package: 6,
-      package_tour: 6,
-      ticket: 7,
-    };
-    const orderA = typeOrder[a.re_type] ?? 99;
-    const orderB = typeOrder[b.re_type] ?? 99;
-    if (orderA !== orderB) return orderA - orderB;
     return new Date(b.re_created_at).getTime() - new Date(a.re_created_at).getTime();
   });
 

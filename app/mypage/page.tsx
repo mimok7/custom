@@ -20,9 +20,26 @@ export default function MyPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, confirmed: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
+  const [customerName, setCustomerName] = useState('고객');
 
   useEffect(() => {
     if (!user) return;
+    const metadataName = (user.user_metadata as Record<string, unknown> | undefined)?.name;
+    if (typeof metadataName === 'string' && metadataName.trim()) {
+      setCustomerName(metadataName.trim());
+    }
+
+    supabase
+      .from('users')
+      .select('name')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (typeof data?.name === 'string' && data.name.trim()) {
+          setCustomerName(data.name.trim());
+        }
+      });
+
     supabase
       .from('reservation')
       .select('re_status')
@@ -43,7 +60,7 @@ export default function MyPage() {
   if (!user) { router.replace('/login'); return null; }
 
   return (
-    <PageWrapper title="마이페이지" description="예약 현황을 한눈에 확인하세요">
+    <PageWrapper title={`${customerName}님 환영합니다.`} description="예약 현황을 한눈에 확인하세요">
       {/* 통계 */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
