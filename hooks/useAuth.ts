@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import { isInvalidRefreshTokenError, clearInvalidSession } from '@/lib/authHelpers';
+import { queryClient } from '@/lib/queryClient';
 
 interface AuthState {
   user: Record<string, unknown> | null;
@@ -144,8 +145,60 @@ export function useAuth(
     };
 
     check();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        authCache = null;
+        try {
+          sessionStorage.removeItem(AUTH_CACHE_KEY);
+        } catch {
+          /* SSR safe */
+        }
+        queryClient.clear();
+        if (!cancelled) {
+          setState({ user: null, role: null, loading: false, error: null });
+        }
+        return;
+      }
+
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+        authCache = null;
+        try {
+          sessionStorage.removeItem(AUTH_CACHE_KEY);
+        } catch {
+          /* SSR safe */
+        }
+        queryClient.clear();
+
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const userRole = (userData?.role as string) || 'guest';
+        authCache = {
+          user: session.user as unknown as Record<string, unknown>,
+          role: userRole,
+          timestamp: Date.now(),
+        };
+        persistCache();
+
+        if (!cancelled) {
+          setState({
+            user: session.user as unknown as Record<string, unknown>,
+            role: userRole,
+            loading: false,
+            error: null,
+          });
+        }
+      }
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

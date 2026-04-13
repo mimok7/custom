@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
+import { clearAuthCache } from '@/hooks/useAuth';
+import { queryClient } from '@/lib/queryClient';
 import { Ship, Menu, X, LogOut, Home, Plus, ClipboardList, FileText } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -18,9 +20,17 @@ export default function Header() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
+    setMobileOpen(false);
     await supabase.auth.signOut();
-    router.push('/login');
+    clearAuthCache();
+    queryClient.clear();
+    router.replace('/login');
+    router.refresh();
   };
 
   return (
