@@ -174,24 +174,60 @@ export default function ReservationViewPage() {
       </SectionBox>
 
       <div>
-        {(details as DetailRow[]).map((detail, idx) => (
-          <SectionBox key={idx} title={`서비스 상세${details.length > 1 ? ` #${idx + 1}` : ''}`}>
-            <div className="space-y-3 text-sm">
-              {Object.entries(fieldLabels).map(([key, label]) => {
-                const val = detail[key];
-                const formatted = formatValue(key, val);
-                if (formatted === null) return null;
-                return (
-                  <div key={key} className="flex flex-col sm:flex-row sm:justify-between">
-                    <span className="font-semibold text-blue-600">{label}</span>
-                    <span className="ml-0 sm:ml-1">:</span>
-                    <span className="text-gray-900 break-words">{formatted}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionBox>
-        ))}
+        {(details as DetailRow[]).map((detail, idx) => {
+          if (serviceType === 'cruise') {
+            // 크루즈명, 객실명, 단가, 인원 등 표시
+            const checkin = formatValue('checkin', detail.checkin);
+            const cruiseName = (detail.cruise_room_info || '').split(' ')[0] || '';
+            const roomName = (detail.cruise_room_info || '').split(' ').slice(1).join(' ') || '';
+            const guestCount = detail.guest_count;
+            const adultCount = detail.adult_count || 0;
+            const childCount = detail.child_count || 0;
+            const roomCount = detail.room_count || 1;
+            const unitPrice = detail.room_type?.room_type_price || detail.unit_price || 0;
+            const childUnitPrice = detail.room_type?.room_type_child_price || detail.child_unit_price || 0;
+            const totalPrice = detail.room_total_price || 0;
+
+            // 단가 * 인원 계산
+            const adultPrice = unitPrice * adultCount * roomCount;
+            const childPrice = childUnitPrice * childCount * roomCount;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="flex flex-col gap-2 text-sm">
+                  {checkin && <div><span className="font-semibold text-blue-600">체크인</span>: {checkin}</div>}
+                  {cruiseName && <div><span className="font-semibold text-blue-600">크루즈명</span>: {cruiseName}</div>}
+                  {roomName && <div><span className="font-semibold text-blue-600">객실명</span>: {roomName}</div>}
+                  {guestCount && <div><span className="font-semibold text-blue-600">인원</span>: {guestCount}</div>}
+                  {adultCount ? <div><span className="font-semibold text-blue-600">성인</span>: {adultCount}</div> : null}
+                  {roomCount && <div><span className="font-semibold text-blue-600">객실 수</span>: {roomCount}</div>}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">객실 단가 * 성인</span>: {unitPrice.toLocaleString()} VND × {adultCount} = {(adultPrice).toLocaleString()} VND</div> : null}
+                  {childUnitPrice && childCount ? <div><span className="font-semibold text-blue-600">객실 단가 * 아동</span>: {childUnitPrice.toLocaleString()} VND × {childCount} = {(childPrice).toLocaleString()} VND</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+          // 기타 서비스는 기존 방식 유지
+          return (
+            <SectionBox key={idx} title={`서비스 상세${details.length > 1 ? ` #${idx + 1}` : ''}`}>
+              <div className="space-y-3 text-sm">
+                {Object.entries(fieldLabels).map(([key, label]) => {
+                  const val = detail[key];
+                  const formatted = formatValue(key, val);
+                  if (formatted === null) return null;
+                  return (
+                    <div key={key} className="flex flex-col sm:flex-row sm:justify-between">
+                      <span className="font-semibold text-blue-600">{label}</span>
+                      <span className="ml-0 sm:ml-1">:</span>
+                      <span className="text-gray-900 break-words">{formatted}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionBox>
+          );
+        })}
       </div>
 
     </PageWrapper>
