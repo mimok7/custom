@@ -174,20 +174,324 @@ function ConfirmationContent({ data }: { data: Record<string, unknown> }) {
       <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1e40af' }}>
         {SERVICE_LABELS[serviceType] ?? serviceType} 상세
       </h3>
-      {details.map((detail, idx) => (
-        <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
-          <tbody>
-            {Object.entries(detail)
-              .filter(([k]) => !['id', 'reservation_id', 'created_at', 'updated_at'].includes(k))
-              .map(([key, val]) => (
-                <tr key={key}>
-                  <td style={cellStyle}>{key}</td>
-                  <td style={valStyle}>{val === null ? '-' : String(val)}</td>
+      {details.map((detail, idx) => {
+        // === 크루즈 ===
+        if (serviceType === 'cruise') {
+          const checkin = detail.checkin || '-';
+          const cruiseName = (detail.cruise_room_info || '').split(' ')[0] || '-';
+          const roomName = (detail.cruise_room_info || '').split(' ').slice(1).join(' ') || '-';
+          const guestCount = detail.guest_count || '-';
+          const adultCount = detail.adult_count || '-';
+          const roomCount = detail.room_count || '-';
+          const unitPrice = Number(detail.unit_price) || 0;
+          const childUnitPrice = Number(detail.child_unit_price) || 0;
+          const adultCnt = Number(detail.adult_count) || 0;
+          const childCnt = Number(detail.child_count) || 0;
+          const totalPrice = detail.room_total_price || '-';
+
+          const adultPrice = unitPrice * adultCnt * (Number(roomCount) || 1);
+          const childPrice = childUnitPrice * childCnt * (Number(roomCount) || 1);
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>체크인</td>
+                  <td style={valStyle}>{checkin}</td>
                 </tr>
-              ))}
-          </tbody>
-        </table>
-      ))}
+                <tr>
+                  <td style={cellStyle}>크루즈명</td>
+                  <td style={valStyle}>{cruiseName}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>객실명</td>
+                  <td style={valStyle}>{roomName}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>인원</td>
+                  <td style={valStyle}>{guestCount}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>성인</td>
+                  <td style={valStyle}>{adultCount}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>객실 수</td>
+                  <td style={valStyle}>{roomCount}</td>
+                </tr>
+                {unitPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}>객실 단가</td>
+                    <td style={valStyle}>성인({unitPrice.toLocaleString()} VND) × {adultCnt} = {adultPrice.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                {childPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}></td>
+                    <td style={valStyle}>아동({childUnitPrice.toLocaleString()} VND) × {childCnt} = {childPrice.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 호텔 ===
+        if (serviceType === 'hotel') {
+          const checkin = detail.checkin_date || '-';
+          const roomCount = detail.room_count || '-';
+          const guestCount = detail.guest_count || '-';
+          const unitPrice = Number(detail.unit_price) || 0;
+          const totalPrice = detail.total_price || '-';
+
+          const totalCalc = unitPrice * (Number(guestCount) || 1) * (Number(roomCount) || 1);
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>체크인</td>
+                  <td style={valStyle}>{checkin}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>인원</td>
+                  <td style={valStyle}>{guestCount}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>객실 수</td>
+                  <td style={valStyle}>{roomCount}</td>
+                </tr>
+                {unitPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}>객실 단가</td>
+                    <td style={valStyle}>{unitPrice.toLocaleString()} VND × {guestCount} = {totalCalc.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 공항 이동 ===
+        if (serviceType === 'airport') {
+          const wayType = detail.way_type || '-';
+          const datetime = detail.ra_datetime || '-';
+          const passengerCount = detail.ra_passenger_count || '-';
+          const unitPrice = Number(detail.unit_price) || 0;
+          const totalPrice = detail.total_price || '-';
+
+          const totalCalc = unitPrice * (Number(passengerCount) || 1);
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>편도/왕복</td>
+                  <td style={valStyle}>{wayType}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>일시</td>
+                  <td style={valStyle}>{datetime}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>인원</td>
+                  <td style={valStyle}>{passengerCount}</td>
+                </tr>
+                {unitPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}>단가</td>
+                    <td style={valStyle}>{unitPrice.toLocaleString()} VND × {passengerCount} = {totalCalc.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 투어 ===
+        if (serviceType === 'tour') {
+          const tourDate = detail.usage_date || '-';
+          const tourCapacity = detail.tour_capacity || '-';
+          const unitPrice = Number(detail.unit_price) || 0;
+          const totalPrice = detail.total_price || '-';
+
+          const totalCalc = unitPrice * (Number(tourCapacity) || 1);
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>투어 날짜</td>
+                  <td style={valStyle}>{tourDate}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>인원</td>
+                  <td style={valStyle}>{tourCapacity}</td>
+                </tr>
+                {unitPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}>단가</td>
+                    <td style={valStyle}>{unitPrice.toLocaleString()} VND × {tourCapacity} = {totalCalc.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 렌터카 ===
+        if (serviceType === 'rentcar') {
+          const wayType = detail.way_type || '-';
+          const pickupDatetime = detail.pickup_datetime || '-';
+          const returnDatetime = detail.return_datetime || '-';
+          const carCount = detail.car_count || '-';
+          const passengerCount = detail.passenger_count || '-';
+          const unitPrice = Number(detail.unit_price) || 0;
+          const totalPrice = detail.total_price || '-';
+
+          const totalCalc = unitPrice * (Number(carCount) || 1);
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>유형</td>
+                  <td style={valStyle}>{wayType}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>출발 일시</td>
+                  <td style={valStyle}>{pickupDatetime}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>반환 일시</td>
+                  <td style={valStyle}>{returnDatetime}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>인원</td>
+                  <td style={valStyle}>{passengerCount}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>차량 대수</td>
+                  <td style={valStyle}>{carCount}</td>
+                </tr>
+                {unitPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}>단가</td>
+                    <td style={valStyle}>{unitPrice.toLocaleString()} VND × {carCount} = {totalCalc.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 티켓 ===
+        if (serviceType === 'ticket') {
+          const usageDate = detail.usage_date || '-';
+          const tourCapacity = detail.tour_capacity || '-';
+          const unitPrice = Number(detail.unit_price) || 0;
+          const totalPrice = detail.total_price || '-';
+
+          const totalCalc = unitPrice * (Number(tourCapacity) || 1);
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>이용 날짜</td>
+                  <td style={valStyle}>{usageDate}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>수량</td>
+                  <td style={valStyle}>{tourCapacity}</td>
+                </tr>
+                {unitPrice > 0 && (
+                  <tr>
+                    <td style={cellStyle}>단가</td>
+                    <td style={valStyle}>{unitPrice.toLocaleString()} VND × {tourCapacity} = {totalCalc.toLocaleString()} VND</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 패키지 ===
+        if (serviceType === 'package') {
+          const adultCount = detail.adult_count || '-';
+          const childExtraBed = detail.child_extra_bed || '-';
+          const childNoExtraBed = detail.child_no_extra_bed || '-';
+          const infantFree = detail.infant_free || '-';
+          const totalPrice = detail.total_price || '-';
+
+          return (
+            <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={cellStyle}>성인</td>
+                  <td style={valStyle}>{adultCount}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>아동 (엑스트라베드)</td>
+                  <td style={valStyle}>{childExtraBed}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>아동 (베드 미사용)</td>
+                  <td style={valStyle}>{childNoExtraBed}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>유아 (무료)</td>
+                  <td style={valStyle}>{infantFree}</td>
+                </tr>
+                <tr>
+                  <td style={cellStyle}>총 가격</td>
+                  <td style={valStyle}>{totalPrice}</td>
+                </tr>
+              </tbody>
+            </table>
+          );
+        }
+
+        // === 기타 (기본) ===
+        return (
+          <table key={idx} style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse' }}>
+            <tbody>
+              {Object.entries(detail)
+                .filter(([k]) => !['id', 'reservation_id', 'created_at', 'updated_at'].includes(k))
+                .map(([key, val]) => (
+                  <tr key={key}>
+                    <td style={cellStyle}>{key}</td>
+                    <td style={valStyle}>{val === null ? '-' : String(val)}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        );
+      })}
 
       {/* 푸터 */}
       <div style={{ marginTop: '30px', borderTop: '1px solid #e5e7eb', paddingTop: '10px', textAlign: 'center', fontSize: '10px', color: '#9ca3af' }}>

@@ -175,12 +175,12 @@ export default function ReservationViewPage() {
 
       <div>
         {(details as DetailRow[]).map((detail, idx) => {
+          // === 크루즈 === 
           if (serviceType === 'cruise') {
-            // 크루즈명, 객실명, 단가, 인원 등 표시
             const checkin = formatValue('checkin', detail.checkin);
             const cruiseName = (detail.cruise_room_info || '').split(' ')[0] || '';
             const roomName = (detail.cruise_room_info || '').split(' ').slice(1).join(' ') || '';
-            const guestCount = detail.guest_count;
+            const guestCount = detail.guest_count || 0;
             const adultCount = detail.adult_count || 0;
             const childCount = detail.child_count || 0;
             const roomCount = detail.room_count || 1;
@@ -188,27 +188,163 @@ export default function ReservationViewPage() {
             const childUnitPrice = detail.room_type?.room_type_child_price || detail.child_unit_price || 0;
             const totalPrice = detail.room_total_price || 0;
 
-            // 단가 * 인원 계산
             const adultPrice = unitPrice * adultCount * roomCount;
             const childPrice = childUnitPrice * childCount * roomCount;
 
             return (
               <SectionBox key={idx} title="서비스 상세">
-                <div className="flex flex-col gap-2 text-sm">
+                <div className="space-y-2 text-sm">
                   {checkin && <div><span className="font-semibold text-blue-600">체크인</span>: {checkin}</div>}
                   {cruiseName && <div><span className="font-semibold text-blue-600">크루즈명</span>: {cruiseName}</div>}
                   {roomName && <div><span className="font-semibold text-blue-600">객실명</span>: {roomName}</div>}
-                  {guestCount && <div><span className="font-semibold text-blue-600">인원</span>: {guestCount}</div>}
+                  {guestCount ? <div><span className="font-semibold text-blue-600">인원</span>: {guestCount}</div> : null}
                   {adultCount ? <div><span className="font-semibold text-blue-600">성인</span>: {adultCount}</div> : null}
-                  {roomCount && <div><span className="font-semibold text-blue-600">객실 수</span>: {roomCount}</div>}
-                  {unitPrice ? <div><span className="font-semibold text-blue-600">객실 단가 * 성인</span>: {unitPrice.toLocaleString()} VND × {adultCount} = {(adultPrice).toLocaleString()} VND</div> : null}
-                  {childUnitPrice && childCount ? <div><span className="font-semibold text-blue-600">객실 단가 * 아동</span>: {childUnitPrice.toLocaleString()} VND × {childCount} = {(childPrice).toLocaleString()} VND</div> : null}
+                  {roomCount ? <div><span className="font-semibold text-blue-600">객실 수</span>: {roomCount}</div> : null}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">객실 단가</span>: 성인({unitPrice.toLocaleString()} VND) × {adultCount} = {(adultPrice).toLocaleString()} VND</div> : null}
+                  {childUnitPrice && childCount ? <div className="ml-12"><span className="text-gray-600">아동({childUnitPrice.toLocaleString()} VND) × {childCount} = {(childPrice).toLocaleString()} VND</span></div> : null}
                   {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
                 </div>
               </SectionBox>
             );
           }
-          // 기타 서비스는 기존 방식 유지
+
+          // === 호텔 ===
+          if (serviceType === 'hotel') {
+            const checkin = formatValue('checkin_date', detail.checkin_date);
+            const roomCount = detail.room_count || 1;
+            const guestCount = detail.guest_count || 0;
+            const unitPrice = detail.unit_price || 0;
+            const totalPrice = detail.total_price || 0;
+
+            const totalCalc = unitPrice * guestCount * roomCount;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="space-y-2 text-sm">
+                  {checkin && <div><span className="font-semibold text-blue-600">체크인</span>: {checkin}</div>}
+                  {guestCount ? <div><span className="font-semibold text-blue-600">인원</span>: {guestCount}</div> : null}
+                  {roomCount ? <div><span className="font-semibold text-blue-600">객실 수</span>: {roomCount}</div> : null}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">객실 단가</span>: {unitPrice.toLocaleString()} VND × {guestCount} = {(totalCalc).toLocaleString()} VND</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+
+          // === 공항 이동 ===
+          if (serviceType === 'airport') {
+            const wayType = detail.way_type || '';
+            const datetime = formatValue('ra_datetime', detail.ra_datetime);
+            const passengerCount = detail.ra_passenger_count || 0;
+            const unitPrice = detail.unit_price || 0;
+            const totalPrice = detail.total_price || 0;
+
+            const totalCalc = unitPrice * passengerCount;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="space-y-2 text-sm">
+                  {wayType && <div><span className="font-semibold text-blue-600">편도/왕복</span>: {wayType}</div>}
+                  {datetime && <div><span className="font-semibold text-blue-600">일시</span>: {datetime}</div>}
+                  {passengerCount ? <div><span className="font-semibold text-blue-600">인원</span>: {passengerCount}</div> : null}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">단가</span>: {unitPrice.toLocaleString()} VND × {passengerCount} = {(totalCalc).toLocaleString()} VND</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+
+          // === 투어 ===
+          if (serviceType === 'tour') {
+            const tourDate = formatValue('usage_date', detail.usage_date);
+            const tourCapacity = detail.tour_capacity || 0;
+            const unitPrice = detail.unit_price || 0;
+            const totalPrice = detail.total_price || 0;
+
+            const totalCalc = unitPrice * tourCapacity;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="space-y-2 text-sm">
+                  {tourDate && <div><span className="font-semibold text-blue-600">투어 날짜</span>: {tourDate}</div>}
+                  {tourCapacity ? <div><span className="font-semibold text-blue-600">인원</span>: {tourCapacity}</div> : null}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">단가</span>: {unitPrice.toLocaleString()} VND × {tourCapacity} = {(totalCalc).toLocaleString()} VND</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+
+          // === 렌터카 ===
+          if (serviceType === 'rentcar') {
+            const wayType = detail.way_type || '';
+            const pickupDatetime = formatValue('pickup_datetime', detail.pickup_datetime);
+            const returnDatetime = formatValue('return_datetime', detail.return_datetime);
+            const carCount = detail.car_count || 0;
+            const passengerCount = detail.passenger_count || 0;
+            const unitPrice = detail.unit_price || 0;
+            const totalPrice = detail.total_price || 0;
+
+            const totalCalc = unitPrice * carCount;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="space-y-2 text-sm">
+                  {wayType && <div><span className="font-semibold text-blue-600">유형</span>: {wayType}</div>}
+                  {pickupDatetime && <div><span className="font-semibold text-blue-600">출발 일시</span>: {pickupDatetime}</div>}
+                  {returnDatetime && <div><span className="font-semibold text-blue-600">반환 일시</span>: {returnDatetime}</div>}
+                  {passengerCount ? <div><span className="font-semibold text-blue-600">인원</span>: {passengerCount}</div> : null}
+                  {carCount ? <div><span className="font-semibold text-blue-600">차량 대수</span>: {carCount}</div> : null}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">단가</span>: {unitPrice.toLocaleString()} VND × {carCount} = {(totalCalc).toLocaleString()} VND</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+
+          // === 티켓 ===
+          if (serviceType === 'ticket') {
+            const usageDate = formatValue('usage_date', detail.usage_date);
+            const tourCapacity = detail.tour_capacity || 0;
+            const unitPrice = detail.unit_price || 0;
+            const totalPrice = detail.total_price || 0;
+
+            const totalCalc = unitPrice * tourCapacity;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="space-y-2 text-sm">
+                  {usageDate && <div><span className="font-semibold text-blue-600">이용 날짜</span>: {usageDate}</div>}
+                  {tourCapacity ? <div><span className="font-semibold text-blue-600">수량</span>: {tourCapacity}</div> : null}
+                  {unitPrice ? <div><span className="font-semibold text-blue-600">단가</span>: {unitPrice.toLocaleString()} VND × {tourCapacity} = {(totalCalc).toLocaleString()} VND</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+
+          // === 패키지 ===
+          if (serviceType === 'package') {
+            const adultCount = detail.adult_count || 0;
+            const childExtraBed = detail.child_extra_bed || 0;
+            const childNoExtraBed = detail.child_no_extra_bed || 0;
+            const infantFree = detail.infant_free || 0;
+            const totalPrice = detail.total_price || 0;
+
+            return (
+              <SectionBox key={idx} title="서비스 상세">
+                <div className="space-y-2 text-sm">
+                  {adultCount ? <div><span className="font-semibold text-blue-600">성인</span>: {adultCount}</div> : null}
+                  {childExtraBed ? <div><span className="font-semibold text-blue-600">아동 (엑스트라베드)</span>: {childExtraBed}</div> : null}
+                  {childNoExtraBed ? <div><span className="font-semibold text-blue-600">아동 (베드 미사용)</span>: {childNoExtraBed}</div> : null}
+                  {infantFree ? <div><span className="font-semibold text-blue-600">유아 (무료)</span>: {infantFree}</div> : null}
+                  {totalPrice ? <div><span className="font-semibold text-blue-600">총 가격</span>: {totalPrice.toLocaleString()} VND</div> : null}
+                </div>
+              </SectionBox>
+            );
+          }
+
+          // === 기타 (기본) ===
           return (
             <SectionBox key={idx} title={`서비스 상세${details.length > 1 ? ` #${idx + 1}` : ''}`}>
               <div className="space-y-3 text-sm">
