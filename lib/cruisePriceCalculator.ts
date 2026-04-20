@@ -141,7 +141,7 @@ export async function getCruiseNames(filter: CruiseFilterInput): Promise<string[
     .gte('valid_to', filter.checkin_date);
 
   if (error || !data) return [];
-  return [...new Set(data.map((r) => r.cruise_name))];
+  return [...new Set(data.map((r) => r.cruise_name))].sort();
 }
 
 export async function getRoomTypes(filter: CruiseFilterInput): Promise<CruiseRateCard[]> {
