@@ -317,6 +317,30 @@ export default function CruiseBookingPage() {
         </SectionBox>
       )}
 
+      {/* 추가 옵션 */}
+      <SectionBox title="추가 옵션">
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />크루즈 차량 예약 추가
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />커넥팅 룸
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />생일 이벤트
+            </label>
+          </div>
+          {birthdayEvent && (
+            <input value={birthdayName} onChange={(e) => setBirthdayName(e.target.value)} placeholder="생일자 이름" />
+          )}
+          <div>
+            <label className="text-sm text-gray-700">요청 사항</label>
+            <textarea rows={3} value={requestNote} onChange={(e) => setRequestNote(e.target.value)} placeholder="추가 요청사항을 입력하세요" />
+          </div>
+        </div>
+      </SectionBox>
+
       {/* 당일 투어 옵션 */}
       {tourOptions.length > 0 && schedule === '당일' && (
         <SectionBox title="당일 투어 옵션">
@@ -341,55 +365,51 @@ export default function CruiseBookingPage() {
       )}
 
       {/* 차량 예약 */}
-      <SectionBox title="크루즈 차량">
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />
-            <Car className="w-4 h-4 text-gray-500" />크루즈 차량 예약 추가
-          </label>
-          {addCar && (
-            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {addCar && (
+        <SectionBox title="크루즈 차량 예약">
+          <div className="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">이용방식</label>
+                <select 
+                  value={carCategory} 
+                  onChange={(e) => setCarCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">선택</option>
+                  {carCategories.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              {carCategory && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">이용방식</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">경로</label>
                   <select 
-                    value={carCategory} 
-                    onChange={(e) => setCarCategory(e.target.value)}
+                    value={carRoute} 
+                    onChange={(e) => setCarRoute(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option value="">선택</option>
-                    {carCategories.map((c) => <option key={c}>{c}</option>)}
+                    <option value="">경로 선택</option>
+                    {routeOptions.map((r) => <option key={r}>{r}</option>)}
                   </select>
                 </div>
-                {carCategory && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">경로</label>
-                    <select 
-                      value={carRoute} 
-                      onChange={(e) => setCarRoute(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="">경로 선택</option>
-                      {routeOptions.map((r) => <option key={r}>{r}</option>)}
-                    </select>
-                  </div>
-                )}
-                {carRoute && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">차량 타입</label>
-                    <select 
-                      value={carType} 
-                      onChange={(e) => setCarType(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="">차량 선택</option>
-                      {carTypeOptions.map((t) => <option key={t}>{t}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-              {carCategory && carRoute && carType && (
-                <div className="mt-3 pt-3 border-t border-blue-200">
+              )}
+              {carRoute && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">차량 타입</label>
+                  <select 
+                    value={carType} 
+                    onChange={(e) => setCarType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">차량 선택</option>
+                    {carTypeOptions.map((t) => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            {carCategory && carRoute && carType && (
+              <div className="pt-3 border-t border-blue-200 space-y-3">
+                <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">{carType.includes('셔틀') && !carType.includes('단독') ? '인원수' : '차량 대수'}</label>
                   <input 
                     type="number" 
@@ -399,36 +419,20 @@ export default function CruiseBookingPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      </SectionBox>
-
-      {/* 추가 옵션 */}
-      <SectionBox title="추가 옵션">
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm text-gray-700">픽업 장소 (영문)</label>
-            <input value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} placeholder="Hotel name or address in English" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">픽업 장소 (영문)</label>
+                  <input 
+                    value={pickupLocation} 
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    placeholder="Hotel name or address in English"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />커넥팅 룸
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />생일 이벤트
-            </label>
-          </div>
-          {birthdayEvent && (
-            <input value={birthdayName} onChange={(e) => setBirthdayName(e.target.value)} placeholder="생일자 이름" />
-          )}
-          <div>
-            <label className="text-sm text-gray-700">요청 사항</label>
-            <textarea rows={3} value={requestNote} onChange={(e) => setRequestNote(e.target.value)} placeholder="추가 요청사항을 입력하세요" />
-          </div>
-        </div>
-      </SectionBox>
+        </SectionBox>
+      )}
 
 
 
