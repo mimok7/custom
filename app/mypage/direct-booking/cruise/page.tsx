@@ -322,13 +322,13 @@ export default function CruiseBookingPage() {
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-4">
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />크루즈 차량 예약 추가
+              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />차량 추가
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />커넥팅 룸
+              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />커넥팅룸
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />생일 이벤트
+              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />생일이벤트
             </label>
           </div>
           {birthdayEvent && (
