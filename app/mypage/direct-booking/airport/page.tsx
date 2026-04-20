@@ -20,9 +20,9 @@ interface AirportPrice {
 }
 
 const SERVICE_TYPES = [
+  { value: 'both', label: '픽업 + 샌딩' },
   { value: 'pickup', label: '픽업 (공항→숙소)' },
   { value: 'sending', label: '샌딩 (숙소→공항)' },
-  { value: 'both', label: '픽업 + 샌딩' },
 ] as const;
 
 function hasKorean(text: string): boolean {
@@ -33,7 +33,7 @@ export default function AirportBookingPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [serviceType, setServiceType] = useState<string>('pickup');
+  const [serviceType, setServiceType] = useState<string>('both');
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [routeOptions, setRouteOptions] = useState<string[]>([]);
   const [vehicleOptions, setVehicleOptions] = useState<string[]>([]);
@@ -50,9 +50,11 @@ export default function AirportBookingPage() {
   const [price2, setPrice2] = useState(0);
 
   // 상세
+  const [pickupAirportLocation, setPickupAirportLocation] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [pickupDatetime, setPickupDatetime] = useState('');
   const [pickupFlight, setPickupFlight] = useState('');
+  const [sendingAirportLocation, setSendingAirportLocation] = useState('');
   const [sendingLocation, setSendingLocation] = useState('');
   const [sendingDatetime, setSendingDatetime] = useState('');
   const [sendingFlight, setSendingFlight] = useState('');
@@ -71,6 +73,29 @@ export default function AirportBookingPage() {
         if (data) setCategoryOptions([...new Set(data.map((r) => r.service_type))]);
       });
   }, []);
+
+  /* ── 서비스 타입에 따라 카테고리 자동 설정 ── */
+  useEffect(() => {
+    if (serviceType === 'pickup') {
+      setCategory('픽업');
+      setRoute('');
+      setVehicleType('');
+      setRoute2('');
+      setVehicleType2('');
+    } else if (serviceType === 'sending') {
+      setCategory('샌딩');
+      setRoute('');
+      setVehicleType('');
+      setRoute2('');
+      setVehicleType2('');
+    } else if (serviceType === 'both') {
+      setCategory('픽업');
+      setRoute('');
+      setVehicleType('');
+      setRoute2('');
+      setVehicleType2('');
+    }
+  }, [serviceType]);
 
   /* ── 노선 로드 ── */
   const loadRoutes = useCallback(async (cat: string, setter: (v: string[]) => void) => {
@@ -150,8 +175,8 @@ export default function AirportBookingPage() {
     const needPickup = serviceType === 'pickup' || serviceType === 'both';
     const needSending = serviceType === 'sending' || serviceType === 'both';
 
-    if (needPickup && (!pickupDatetime || !pickupLocation)) { alert('픽업 정보를 입력하세요.'); return; }
-    if (needSending && (!sendingDatetime || !sendingLocation)) { alert('샌딩 정보를 입력하세요.'); return; }
+    if (needPickup && (!pickupAirportLocation || !pickupDatetime || !pickupLocation)) { alert('픽업 정보를 모두 입력하세요.'); return; }
+    if (needSending && (!sendingAirportLocation || !sendingDatetime || !sendingLocation)) { alert('샌딩 정보를 모두 입력하세요.'); return; }
 
     setSubmitting(true);
     try {
@@ -162,9 +187,11 @@ export default function AirportBookingPage() {
           category,
           route,
           vehicleType,
+          pickupAirportLocation: needPickup ? pickupAirportLocation : undefined,
           pickupLocation: needPickup ? pickupLocation : undefined,
           pickupDatetime: needPickup ? pickupDatetime : undefined,
           pickupFlightNumber: needPickup ? pickupFlight : undefined,
+          sendingAirportLocation: needSending ? sendingAirportLocation : undefined,
           sendingLocation: needSending ? sendingLocation : undefined,
           sendingDatetime: needSending ? sendingDatetime : undefined,
           sendingFlightNumber: needSending ? sendingFlight : undefined,
@@ -209,10 +236,7 @@ export default function AirportBookingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
-            <select value={category} onChange={(e) => { setCategory(e.target.value); setRoute(''); setVehicleType(''); }}>
-              <option value="">선택</option>
-              {categoryOptions.map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <input type="text" value={category} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" placeholder="자동 선택" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">노선 {serviceType === 'both' ? '(픽업)' : ''}</label>
@@ -256,29 +280,67 @@ export default function AirportBookingPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">탑승 인원</label>
-              <input type="number" min={1} value={passengerCount || ''} onChange={(e) => setPassengerCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+              <input type="number" min={1} value={passengerCount || ''} onChange={(e) => setPassengerCount(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">수하물 수</label>
-              <input type="number" min={0} value={luggageCount || ''} onChange={(e) => setLuggageCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+              <input type="number" min={0} value={luggageCount || ''} onChange={(e) => setLuggageCount(e.target.value === '' ? 0 : Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
             </div>
           </div>
 
           {needPickup && (
             <div className="space-y-3 p-3 bg-green-50 rounded-lg">
               <h4 className="text-sm font-semibold text-green-800">픽업 정보</h4>
-              <input type="datetime-local" value={pickupDatetime} onChange={(e) => setPickupDatetime(e.target.value)} />
-              <input value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} placeholder="픽업 장소 (영문)" />
-              <input value={pickupFlight} onChange={(e) => setPickupFlight(e.target.value)} placeholder="항공편명 (예: VN123)" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">공항 위치 *</label>
+                <select value={pickupAirportLocation} onChange={(e) => setPickupAirportLocation(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="">선택</option>
+                  <option value="Noi Bai">Noi Bai International Airport</option>
+                  <option value="Tan Son Nhat">Tan Son Nhat International Airport</option>
+                  <option value="Da Nang">Da Nang International Airport</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">픽업 시간 *</label>
+                <input type="datetime-local" value={pickupDatetime} onChange={(e) => setPickupDatetime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <p className="mt-2 rounded-md bg-yellow-100 px-3 py-2 text-xs text-yellow-800">시간 미정시 입력후 시간만 삭제 하세요</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">픽업 장소 (영문)</label>
+                <input value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} placeholder="Hotel name or address" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">항공편명</label>
+                <input value={pickupFlight} onChange={(e) => setPickupFlight(e.target.value)} placeholder="예: VN123" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
             </div>
           )}
 
           {needSending && (
             <div className="space-y-3 p-3 bg-blue-50 rounded-lg">
               <h4 className="text-sm font-semibold text-blue-800">샌딩 정보</h4>
-              <input type="datetime-local" value={sendingDatetime} onChange={(e) => setSendingDatetime(e.target.value)} />
-              <input value={sendingLocation} onChange={(e) => setSendingLocation(e.target.value)} placeholder="샌딩 출발지 (영문)" />
-              <input value={sendingFlight} onChange={(e) => setSendingFlight(e.target.value)} placeholder="항공편명 (예: VN456)" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">공항 위치 *</label>
+                <select value={sendingAirportLocation} onChange={(e) => setSendingAirportLocation(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="">선택</option>
+                  <option value="Noi Bai">Noi Bai International Airport</option>
+                  <option value="Tan Son Nhat">Tan Son Nhat International Airport</option>
+                  <option value="Da Nang">Da Nang International Airport</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">샌딩 시간 *</label>
+                <input type="datetime-local" value={sendingDatetime} onChange={(e) => setSendingDatetime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <p className="mt-2 rounded-md bg-yellow-100 px-3 py-2 text-xs text-yellow-800">시간 미정시 입력후 시간만 삭제 하세요</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">샌딩 출발지 (영문)</label>
+                <input value={sendingLocation} onChange={(e) => setSendingLocation(e.target.value)} placeholder="Hotel name or address" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">항공편명</label>
+                <input value={sendingFlight} onChange={(e) => setSendingFlight(e.target.value)} placeholder="예: VN456" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
             </div>
           )}
 
