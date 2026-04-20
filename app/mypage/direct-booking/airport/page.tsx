@@ -63,6 +63,18 @@ export default function AirportBookingPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const [airportLocationOptions, setAirportLocationOptions] = useState<string[]>([]);
+
+  /* ── 공항 위치 로드 (airport_name 테이블) ── */
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('airport_name')
+        .select('airport_name')
+        .order('airport_name');
+      if (data) setAirportLocationOptions([...new Set(data.map((r) => r.airport_name as string))]);
+    })();
+  }, []);
 
   /* ── 카테고리 로드 ── */
   useEffect(() => {
@@ -97,32 +109,42 @@ export default function AirportBookingPage() {
     }
   }, [serviceType]);
 
-  /* ── 노선 로드 ── */
+  /* ── 노선 로드 (카테고리별) ── */
   const loadRoutes = useCallback(async (cat: string, setter: (v: string[]) => void) => {
     const { data } = await supabase
       .from('airport_price')
       .select('route')
-      .eq('service_type', cat);
-    if (data) setter([...new Set(data.map((r) => r.route))]);
+      .eq('service_type', cat)
+      .order('route');
+    if (data) setter([...new Set(data.map((r) => r.route as string))]);
   }, []);
 
   useEffect(() => {
-    if (category) {
-      loadRoutes(category, setRouteOptions);
-      if (serviceType === 'both') loadRoutes(category, setRouteOptions2);
+    if (category === '픽업') {
+      loadRoutes('픽업', setRouteOptions);
+    } else if (category === '샌딩') {
+      loadRoutes('샌딩', setRouteOptions);
     }
-  }, [category, serviceType, loadRoutes]);
+  }, [category, loadRoutes]);
 
-  /* ── 차종 로드 + 가격 ── */
+  /* ── 샌딩 노선 로드 (both 선택 시) ── */
+  useEffect(() => {
+    if (serviceType === 'both') {
+      loadRoutes('샌딩', setRouteOptions2);
+    }
+  }, [serviceType, loadRoutes]);
+
+/* ── 차종 로드 + 가격 (카테고리 + 노선) ── */
   const loadVehiclesAndPrice = useCallback(
     async (cat: string, rt: string, setVehicles: (v: string[]) => void, setPrice: (p: number) => void) => {
       const { data } = await supabase
         .from('airport_price')
         .select('vehicle_type, price')
         .eq('service_type', cat)
-        .eq('route', rt);
+        .eq('route', rt)
+        .order('vehicle_type');
       if (data) {
-        setVehicles([...new Set(data.map((r) => r.vehicle_type))]);
+        setVehicles([...new Set(data.map((r) => r.vehicle_type as string))]);
         if (data.length === 1) setPrice(data[0].price);
       }
     },
@@ -133,10 +155,10 @@ export default function AirportBookingPage() {
     if (category && route) loadVehiclesAndPrice(category, route, setVehicleOptions, setPrice1);
   }, [category, route, loadVehiclesAndPrice]);
 
+  /* ── 샌딩 차종 로드 + 가격 ── */
   useEffect(() => {
-    if (category && route2 && serviceType === 'both')
-      loadVehiclesAndPrice(category, route2, setVehicleOptions2, setPrice2);
-  }, [category, route2, serviceType, loadVehiclesAndPrice]);
+    if (route2 && serviceType === 'both') loadVehiclesAndPrice('샌딩', route2, setVehicleOptions2, setPrice2);
+  }, [route2, serviceType, loadVehiclesAndPrice]);
 
   /* ── 차종 선택 시 가격 조회 ── */
   const lookupPrice = useCallback(async (cat: string, rt: string, vt: string): Promise<number> => {
@@ -231,13 +253,12 @@ export default function AirportBookingPage() {
         </div>
       </SectionBox>
 
-      {/* 카테고리/노선/차종 */}
+      {/* 카테고리 (숨김) */}
+      <input type="hidden" value={category} />
+
+      {/* 차량 선택 */}
       <SectionBox title="차량 선택">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
-            <input type="text" value={category} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" placeholder="자동 선택" />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">노선 {serviceType === 'both' ? '(픽업)' : ''}</label>
             <select value={route} onChange={(e) => { setRoute(e.target.value); setVehicleType(''); }}>
@@ -295,9 +316,7 @@ export default function AirportBookingPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">공항 위치 *</label>
                 <select value={pickupAirportLocation} onChange={(e) => setPickupAirportLocation(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
                   <option value="">선택</option>
-                  <option value="Noi Bai">Noi Bai International Airport</option>
-                  <option value="Tan Son Nhat">Tan Son Nhat International Airport</option>
-                  <option value="Da Nang">Da Nang International Airport</option>
+                  {airportLocationOptions.map((loc) => <option key={loc}>{loc}</option>)}
                 </select>
               </div>
               <div>
@@ -323,9 +342,7 @@ export default function AirportBookingPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">공항 위치 *</label>
                 <select value={sendingAirportLocation} onChange={(e) => setSendingAirportLocation(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
                   <option value="">선택</option>
-                  <option value="Noi Bai">Noi Bai International Airport</option>
-                  <option value="Tan Son Nhat">Tan Son Nhat International Airport</option>
-                  <option value="Da Nang">Da Nang International Airport</option>
+                  {airportLocationOptions.map((loc) => <option key={loc}>{loc}</option>)}
                 </select>
               </div>
               <div>
