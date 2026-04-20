@@ -348,32 +348,58 @@ export default function CruiseBookingPage() {
             <Car className="w-4 h-4 text-gray-500" />크루즈 차량 예약 추가
           </label>
           {addCar && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 border rounded-lg p-4 bg-green-50">
-              <div>
-                <label className="text-sm text-gray-600">이용방식</label>
-                <select value={carCategory} onChange={(e) => setCarCategory(e.target.value)}>
-                  <option value="">선택</option>
-                  {carCategories.map((c) => <option key={c}>{c}</option>)}
-                </select>
+            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">이용방식</label>
+                  <select 
+                    value={carCategory} 
+                    onChange={(e) => setCarCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">선택</option>
+                    {carCategories.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                {carCategory && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">경로</label>
+                    <select 
+                      value={carRoute} 
+                      onChange={(e) => setCarRoute(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">경로 선택</option>
+                      {routeOptions.map((r) => <option key={r}>{r}</option>)}
+                    </select>
+                  </div>
+                )}
+                {carRoute && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">차량 타입</label>
+                    <select 
+                      value={carType} 
+                      onChange={(e) => setCarType(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">차량 선택</option>
+                      {carTypeOptions.map((t) => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="text-sm text-gray-600">경로</label>
-                <select value={carRoute} onChange={(e) => setCarRoute(e.target.value)} disabled={!routeOptions.length}>
-                  <option value="">선택</option>
-                  {routeOptions.map((r) => <option key={r}>{r}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600">차량 타입</label>
-                <select value={carType} onChange={(e) => setCarType(e.target.value)} disabled={!carTypeOptions.length}>
-                  <option value="">선택</option>
-                  {carTypeOptions.map((t) => <option key={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600">{carType.includes('셔틀') && !carType.includes('단독') ? '인원수' : '차량 대수'}</label>
-                <input type="number" min={1} value={carCount || ''} onChange={(e) => setCarCount(e.target.value === '' ? 0 : Number(e.target.value))} />
-              </div>
+              {carCategory && carRoute && carType && (
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{carType.includes('셔틀') && !carType.includes('단독') ? '인원수' : '차량 대수'}</label>
+                  <input 
+                    type="number" 
+                    min={1} 
+                    value={carCount || ''} 
+                    onChange={(e) => setCarCount(e.target.value === '' ? 0 : Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
