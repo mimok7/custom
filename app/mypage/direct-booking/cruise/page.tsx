@@ -21,7 +21,7 @@ import {
 } from '@/lib/cruisePriceCalculator';
 import { submitReservation } from '@/lib/submitReservation';
 import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
-import { ChevronDown, Plus, Trash2, Ship, Car } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, Ship, Car, AlertCircle } from 'lucide-react';
 
 interface RoomSelection {
   localId: string;
@@ -64,6 +64,7 @@ export default function CruiseBookingPage() {
   const [birthdayEvent, setBirthdayEvent] = useState(false);
   const [birthdayName, setBirthdayName] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
+  const [dropLocation, setDropLocation] = useState('');
 
   /* ── 차량 예약 상태 ── */
   const [addCar, setAddCar] = useState(false);
@@ -175,6 +176,7 @@ export default function CruiseBookingPage() {
       setCarRoute('');
       setCarType('');
       setCarCode('');
+      setDropLocation('');
     })();
   }, [carCategory]);
 
@@ -191,6 +193,7 @@ export default function CruiseBookingPage() {
       setCarTypeOptions(types);
       setCarType('');
       setCarCode('');
+      setDropLocation('');
     })();
   }, [carCategory, carRoute]);
 
@@ -238,7 +241,7 @@ export default function CruiseBookingPage() {
         roomSelections,
         priceResult: priceResults[0] ?? {},
         selectedTourOptions: selectedTourOpts,
-        carData: addCar && carCode ? { car_category: carCategory, car_route: carRoute, car_type: carType, car_code: carCode, car_count: carCount } : null,
+        carData: addCar && carCode ? { car_category: carCategory, car_route: carRoute, car_type: carType, car_code: carCode, car_count: carCount, pickup_location: pickupLocation, drop_location: dropLocation } : null,
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
       alert('크루즈 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
@@ -319,24 +322,49 @@ export default function CruiseBookingPage() {
 
       {/* 추가 옵션 */}
       <SectionBox title="추가 옵션">
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />차량 추가
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />커넥팅룸
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />생일이벤트
+        <div className="space-y-4">
+          {/* 크루즈 차량 추가 */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />
+              <Car className="w-4 h-4 text-gray-600" />크루즈 차량 예약 추가
             </label>
           </div>
-          {birthdayEvent && (
-            <input value={birthdayName} onChange={(e) => setBirthdayName(e.target.value)} placeholder="생일자 이름" />
-          )}
+
+          {/* 커넥팅룸 */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />
+              커넥팅 룸
+            </label>
+            {connectingRoom && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-gray-700">
+                <p>* 침대 타입은 더블 + 트윈으로 고정됨.</p>
+                <p>* 커넥팅 룸 수량은 한정적이기 때문에, 매진인 경우 옆 객실이나 마주보는 객실 등 가까운 객실로 배정됨.</p>
+              </div>
+            )}
+          </div>
+
+          {/* 생일축하 */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />
+              생일 축하 이벤트
+            </label>
+            {birthdayEvent && (
+              <>
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-gray-700 mb-3">
+                  <p>* 100만동의 유료 서비스입니다.</p>
+                </div>
+                <input value={birthdayName} onChange={(e) => setBirthdayName(e.target.value)} placeholder="생일자 이름" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </>
+            )}
+          </div>
+
+          {/* 요청 사항 */}
           <div>
-            <label className="text-sm text-gray-700">요청 사항</label>
-            <textarea rows={3} value={requestNote} onChange={(e) => setRequestNote(e.target.value)} placeholder="추가 요청사항을 입력하세요" />
+            <label className="text-sm text-gray-700 block mb-2">요청 사항</label>
+            <textarea rows={3} value={requestNote} onChange={(e) => setRequestNote(e.target.value)} placeholder="추가 요청사항을 입력하세요" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
           </div>
         </div>
       </SectionBox>
@@ -428,6 +456,17 @@ export default function CruiseBookingPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
+                {(carCategory.includes('왕복')) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">드롭 장소 (영문)</label>
+                    <input 
+                      value={dropLocation}
+                      onChange={(e) => setDropLocation(e.target.value)}
+                      placeholder="Hotel name or address in English"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
