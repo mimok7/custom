@@ -66,6 +66,15 @@ export function useAuth(
   useEffect(() => {
     let cancelled = false;
 
+    // 워치독 타이머: 12초 후에도 로딩 중이면 강제 해제 (무한 로딩 방지)
+    const watchdogId = setTimeout(() => {
+      if (cancelled) return;
+      setState((prev) => {
+        if (!prev.loading) return prev;
+        return { ...prev, loading: false, error: new Error('AUTH_LOADING_TIMEOUT') };
+      });
+    }, 12000);
+
     const check = async () => {
       try {
         restoreCache();
@@ -195,6 +204,7 @@ export function useAuth(
 
     return () => {
       cancelled = true;
+      clearTimeout(watchdogId);
       subscription.unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

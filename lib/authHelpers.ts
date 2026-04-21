@@ -1,29 +1,32 @@
 import supabase from './supabase';
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+  return Promise.race<T>([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    }),
+  ]);
+}
+
 /** 로컬 세션에서 사용자 조회 (네트워크 타임아웃 10초) */
 export async function getSessionUser(
   timeoutMs = 10000,
 ): Promise<{ user: Record<string, unknown> | null; error: unknown }> {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.user) return { user: session.user, error: null };
+    const { data: { session } } = await withTimeout(
+      supabase.auth.getSession(),
+      timeoutMs,
+      `Auth session check timed out (${timeoutMs}ms)`,
+    );
+    if (session?.user) return { user: session.user as Record<string, unknown>, error: null };
 
-    return await Promise.race<{
-      user: Record<string, unknown> | null;
-      error: unknown;
-    }>([
-      supabase.auth
-        .getUser()
-        .then((r) => ({ user: r.data.user as Record<string, unknown> | null, error: r.error })),
-      new Promise((resolve) =>
-        setTimeout(
-          () => resolve({ user: null, error: new Error('Auth check timed out') }),
-          timeoutMs,
-        ),
-      ),
-    ]);
+    const userResult = await withTimeout(
+      supabase.auth.getUser(),
+      timeoutMs,
+      `Auth user check timed out (${timeoutMs}ms)`,
+    );
+    return { user: userResult.data.user as Record<string, unknown> | null, error: userResult.error };
   } catch (err) {
     return { user: null, error: err };
   }
@@ -47,20 +50,13 @@ export async function refreshAuthBeforeSubmit(
 
     if (expiresAt && expiresAt - now < 300) {
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase.auth.refreshSession(),
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error('Session refresh timed out')),
-              timeoutMs,
-            ),
-          ),
-        ]);
+          timeoutMs,
+          'Session refresh timed out',
+        );
         if (result.error || !result.data.session) {
-          return {
-            user: null,
-            error: result.error || new Error('Session refresh failed'),
-          };
+          return { user: null, error: result.error || new Error('Session refresh failed') };
         }
         return { user: result.data.session.user as Record<string, unknown>, error: null };
       } catch (refreshErr) {
