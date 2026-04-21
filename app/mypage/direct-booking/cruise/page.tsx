@@ -235,11 +235,11 @@ export default function CruiseBookingPage() {
     setSubmitting(true);
     try {
       const { error } = await submitReservation('cruise', {
-        form: { checkin, schedule, cruise_name: cruiseName, room_request_note: requestNote, connecting_room: connectingRoom, birthday_event: birthdayEvent, birthday_name: birthdayName, pickup_location: pickupLocation },
+        form: { checkin, schedule, cruise_name: cruiseName, room_request_note: requestNote, connecting_room: connectingRoom, birthday_event: birthdayEvent, birthday_name: birthdayName, pickup_location: pickupLocation, dropoff_location: dropLocation },
         roomSelections,
         priceResult: priceResults[0] ?? {},
         selectedTourOptions: selectedTourOpts,
-        carData: addCar && carCode ? { car_category: carCategory, car_route: carRoute, car_type: carType, car_code: carCode, car_count: carCount, pickup_location: pickupLocation, drop_location: dropLocation } : null,
+        carData: addCar && carCode ? { car_category: carCategory, car_route: carRoute, car_type: carType, car_code: carCode, car_count: carCount, pickup_location: pickupLocation, dropoff_location: dropLocation } : null,
       });
       if (error) { alert(`예약 오류: ${error}`); return; }
       alert('크루즈 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');
