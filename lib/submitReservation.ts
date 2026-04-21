@@ -1,48 +1,9 @@
 import supabase from '@/lib/supabase';
+import { getFastAuthUserWithMemberRole } from '@/lib/reservationAuth';
 
 export interface SubmitResult {
   reservationId: string | null;
   error: string | null;
-}
-
-/** 예약자 users 테이블 등록/승격 */
-async function ensureUser(): Promise<string | null> {
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) return '로그인 세션 확인에 실패했습니다.';
-
-    const user = data.user;
-    const now = new Date().toISOString();
-
-    const { data: existing, error: fetchErr } = await supabase
-      .from('users')
-      .select('id,role')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (fetchErr) return `사용자 정보 확인 실패: ${fetchErr.message}`;
-
-    if (!existing) {
-      const { error: insertErr } = await supabase.from('users').insert({
-        id: user.id,
-        email: user.email,
-        role: 'member',
-        created_at: now,
-        updated_at: now,
-      });
-      if (insertErr) return `사용자 등록 실패: ${insertErr.message}`;
-    } else if (!existing.role || existing.role === 'guest') {
-      const { error: updateErr } = await supabase
-        .from('users')
-        .update({ role: 'member', updated_at: now })
-        .eq('id', user.id);
-      if (updateErr) return `사용자 권한 갱신 실패: ${updateErr.message}`;
-    }
-
-    return null;
-  } catch (err: unknown) {
-    return `사용자 확인 중 오류: ${err instanceof Error ? err.message : String(err)}`;
-  }
 }
 
 /** 메인 reservation 행 생성 */
@@ -132,6 +93,7 @@ export async function saveCruiseDetail(
 
     /* ── 크루즈 차량 저장 ── */
     const carData = payload.carData as Record<string, unknown> | null;
+    const userId = payload.userId ? String(payload.userId) : '';
     if (carData && carData.car_code) {
       const isShuttle = String(carData.car_type ?? '').includes('셔틀') && !String(carData.car_type ?? '').includes('단독');
       const inputCount = Number(carData.car_count) || 1;
@@ -147,10 +109,9 @@ export async function saveCruiseDetail(
       const totalPrice = unitPrice * inputCount;
 
       // 차량 전용 reservation 생성
-      const { data: user } = await supabase.auth.getUser();
-      if (user?.user) {
+      if (userId) {
         const { data: carRes } = await supabase.from('reservation').insert({
-          re_user_id: user.user.id,
+          re_user_id: userId,
           re_type: 'car',
           re_status: 'pending',
           total_amount: totalPrice,
@@ -408,18 +369,20 @@ export async function submitReservation(
   serviceType: string,
   payload: Record<string, unknown>,
 ): Promise<SubmitResult> {
-  const userErr = await ensureUser();
-  if (userErr) return { reservationId: null, error: userErr };
+  const { user, error } = await getFastAuthUserWithMemberRole();
+  if (error || !user?.id) {
+    const message = error instanceof Error ? error.message : '사용자 정보를 가져올 수 없습니다.';
+    return { reservationId: null, error: message };
+  }
 
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return { reservationId: null, error: '사용자 정보를 가져올 수 없습니다.' };
+  const payloadWithUser = { ...payload, userId: String(user.id) };
 
-  const { id, error: createErr } = await createReservation(data.user.id, serviceType);
+  const { id, error: createErr } = await createReservation(String(user.id), serviceType);
   if (createErr || !id) return { reservationId: null, error: createErr ?? '예약 생성 실패' };
 
   const saveFn = SAVE_MAP[serviceType];
   if (saveFn) {
-    const detailErr = await saveFn(id, payload);
+    const detailErr = await saveFn(id, payloadWithUser);
     if (detailErr) return { reservationId: id, error: detailErr };
   }
 
