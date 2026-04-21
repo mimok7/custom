@@ -25,6 +25,7 @@ const BG: Record<ToastType, string> = {
 let idSeq = 0;
 
 export default function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -32,6 +33,11 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
     setToasts((prev) => prev.filter((t) => t.id !== id));
     const t = timers.current.get(id);
     if (t) { clearTimeout(t); timers.current.delete(id); }
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
   }, []);
 
   useEffect(() => {
@@ -62,7 +68,7 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
   return (
     <>
       {children}
-      {typeof document !== 'undefined' &&
+      {mounted &&
         createPortal(
           <div
             aria-live="polite"

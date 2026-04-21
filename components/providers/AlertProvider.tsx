@@ -4,15 +4,18 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function AlertProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const brandName = '스테이 하롱 트레블';
 
   useEffect(() => {
+    setMounted(true);
     const original = window.alert;
     window.alert = (msg?: unknown) => {
       setMessage(typeof msg === 'string' ? msg : String(msg ?? ''));
     };
     return () => {
+      setMounted(false);
       window.alert = original;
     };
   }, []);
@@ -22,8 +25,8 @@ export default function AlertProvider({ children }: { children: React.ReactNode 
   return (
     <>
       {children}
-      {message !== null &&
-        typeof document !== 'undefined' &&
+      {mounted &&
+        message !== null &&
         createPortal(
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45"
