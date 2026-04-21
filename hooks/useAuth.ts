@@ -65,6 +65,7 @@ export function useAuth(
 
   useEffect(() => {
     let cancelled = false;
+    let checking = false;
 
     // 워치독 타이머: 12초 후에도 로딩 중이면 강제 해제 (무한 로딩 방지)
     const watchdogId = setTimeout(() => {
@@ -75,7 +76,22 @@ export function useAuth(
       });
     }, 12000);
 
-    const check = async () => {
+    const check = async (forceRefresh = false) => {
+      if (checking) return;
+      checking = true;
+
+      if (forceRefresh) {
+        authCache = null;
+        try {
+          sessionStorage.removeItem(AUTH_CACHE_KEY);
+        } catch {
+          /* SSR safe */
+        }
+        if (!cancelled) {
+          setState((prev) => ({ ...prev, loading: true }));
+        }
+      }
+
       try {
         restoreCache();
 
@@ -94,7 +110,7 @@ export function useAuth(
             authCache.role &&
             !requiredRoles.includes(authCache.role)
           ) {
-            router.push(redirectOnFail);
+            router.replace(redirectOnFail);
           }
           return;
         }
@@ -107,7 +123,7 @@ export function useAuth(
             await clearInvalidSession();
           }
           setState({ user: null, role: null, loading: false, error: userError as Error | null });
-          if (requiredRoles?.length) router.push('/login');
+          if (requiredRoles?.length) router.replace('/login');
           return;
         }
 
@@ -132,7 +148,7 @@ export function useAuth(
 
         if (requiredRoles && !requiredRoles.includes(userRole)) {
           alert('접근 권한이 없습니다.');
-          router.push(redirectOnFail);
+          router.replace(redirectOnFail);
         }
       } catch (error) {
         if (isInvalidRefreshTokenError(error)) {
@@ -146,58 +162,89 @@ export function useAuth(
             error: error as Error,
           });
         }
-        if (requiredRoles?.length) router.push('/login');
+        if (requiredRoles?.length) router.replace('/login');
+      } finally {
+        checking = false;
       }
     };
 
     check();
+
+    const handleFocus = () => {
+      void check(true);
+    };
+
+    const handleOnline = () => {
+      void check(true);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void check(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        authCache = null;
-        try {
-          sessionStorage.removeItem(AUTH_CACHE_KEY);
-        } catch {
-          /* SSR safe */
+      try {
+        if (event === 'SIGNED_OUT') {
+          authCache = null;
+          try {
+            sessionStorage.removeItem(AUTH_CACHE_KEY);
+          } catch {
+            /* SSR safe */
+          }
+          queryClient.clear();
+          if (!cancelled) {
+            setState({ user: null, role: null, loading: false, error: null });
+          }
+          return;
         }
-        queryClient.clear();
-        if (!cancelled) {
-          setState({ user: null, role: null, loading: false, error: null });
-        }
-        return;
-      }
 
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
-        authCache = null;
-        try {
-          sessionStorage.removeItem(AUTH_CACHE_KEY);
-        } catch {
-          /* SSR safe */
-        }
-        queryClient.clear();
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+          authCache = null;
+          try {
+            sessionStorage.removeItem(AUTH_CACHE_KEY);
+          } catch {
+            /* SSR safe */
+          }
+          queryClient.clear();
 
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .maybeSingle();
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        const userRole = (userData?.role as string) || 'guest';
-        authCache = {
-          user: session.user as unknown as Record<string, unknown>,
-          role: userRole,
-          timestamp: Date.now(),
-        };
-        persistCache();
-
-        if (!cancelled) {
-          setState({
+          const userRole = (userData?.role as string) || 'guest';
+          authCache = {
             user: session.user as unknown as Record<string, unknown>,
             role: userRole,
+            timestamp: Date.now(),
+          };
+          persistCache();
+
+          if (!cancelled) {
+            setState({
+              user: session.user as unknown as Record<string, unknown>,
+              role: userRole,
+              loading: false,
+              error: null,
+            });
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setState((prev) => ({
+            ...prev,
             loading: false,
-            error: null,
-          });
+            error: error as Error,
+          }));
         }
       }
     });
@@ -205,6 +252,9 @@ export function useAuth(
     return () => {
       cancelled = true;
       clearTimeout(watchdogId);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       subscription.unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabase';
+import { getSessionUser } from '@/lib/authHelpers';
 import Spinner from '@/components/ui/Spinner';
 
 export default function RootPage() {
@@ -12,11 +12,9 @@ export default function RootPage() {
     let cancelled = false;
     const check = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const { user } = await getSessionUser(8000);
         if (cancelled) return;
-        router.replace(session?.user ? '/mypage' : '/login');
+        router.replace(user ? '/mypage' : '/login');
       } catch {
         if (!cancelled) router.replace('/login');
       }
