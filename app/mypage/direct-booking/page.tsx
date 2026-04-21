@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { useAuth } from '@/hooks/useAuth';
 import Spinner from '@/components/ui/Spinner';
+import { useReservations } from '@/hooks/useQueries';
 import {
   Ship, Plane, Hotel, MapPin, Car, Ticket, Package,
 } from 'lucide-react';
@@ -21,28 +22,46 @@ const SERVICES = [
 export default function DirectBookingPage() {
   const { user, loading } = useAuth(undefined, '/login', true);
   const router = useRouter();
+  const { data: reservations = [], isLoading: reservationsLoading } = useReservations(user?.id);
 
-  if (loading) return <Spinner className="h-72" />;
+  // 서비스별 완료 예약 확인
+  const completedServices = new Set(
+    reservations
+      .filter((res) => res.re_status === 'completed')
+      .map((res) => res.re_type),
+  );
+
+  if (loading || reservationsLoading) return <Spinner className="h-72" />;
   if (!user) return null;
 
   return (
     <PageWrapper title="직접 예약" description="원하는 서비스를 선택하세요">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {SERVICES.map(({ key, label, icon: Icon, color, desc }) => (
-          <button
-            key={key}
-            onClick={() => router.push(`/mypage/direct-booking/${key}`)}
-            className="card flex items-start gap-4 text-left hover:shadow-md transition-shadow"
-          >
-            <div className={`p-3 rounded-lg ${color}`}>
-              <Icon className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{label}</h3>
-              <p className="text-sm text-gray-500 mt-0.5">{desc}</p>
-            </div>
-          </button>
-        ))}
+        {SERVICES.map(({ key, label, icon: Icon, color, desc }) => {
+          const isCompleted = completedServices.has(key);
+          return (
+            <button
+              key={key}
+              onClick={() => router.push(`/mypage/direct-booking/${key}`)}
+              className="card flex items-start gap-4 text-left hover:shadow-md transition-shadow relative"
+            >
+              {isCompleted && (
+                <div className="absolute -top-2 -right-2 w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 transform rotate-45 shadow-lg flex items-center justify-center">
+                  <div className="transform -rotate-45 text-white font-bold text-xs whitespace-nowrap">
+                    완료
+                  </div>
+                </div>
+              )}
+              <div className={`p-3 rounded-lg ${color}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{label}</h3>
+                <p className="text-sm text-gray-500 mt-0.5">{desc}</p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </PageWrapper>
   );
