@@ -118,6 +118,9 @@ export function useAuth(
             authCache.role &&
             !requiredRoles.includes(authCache.role)
           ) {
+            if (!cancelled) {
+              setState({ user: null, role: null, loading: false, error: null });
+            }
             router.replace(redirectOnFail);
           }
           return;
@@ -155,9 +158,12 @@ export function useAuth(
         }
 
         if (requiredRoles && !requiredRoles.includes(userRole)) {
+          if (!cancelled) {
+            setState({ user: null, role: null, loading: false, error: null });
+          }
           alert('접근 권한이 없습니다.');
           router.replace(redirectOnFail);
-        }
+          return;
       } catch (error) {
         if (isInvalidRefreshTokenError(error)) {
           await clearInvalidSession();
