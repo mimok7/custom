@@ -164,6 +164,7 @@ export function useAuth(
           alert('접근 권한이 없습니다.');
           router.replace(redirectOnFail);
           return;
+        }
       } catch (error) {
         if (isInvalidRefreshTokenError(error)) {
           await clearInvalidSession();
