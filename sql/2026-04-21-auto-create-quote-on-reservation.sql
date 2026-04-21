@@ -22,6 +22,18 @@ BEGIN
     RAISE EXCEPTION 'p_user_id is required';
   END IF;
 
+  -- quote.user_id FK 보장을 위해 users 행을 선행 보정
+  INSERT INTO public.users (id, role, status, created_at, updated_at)
+  VALUES (p_user_id, 'member', 'active', now(), now())
+  ON CONFLICT (id) DO UPDATE
+  SET
+    updated_at = EXCLUDED.updated_at,
+    role = CASE
+      WHEN users.role = 'guest' THEN 'member'
+      ELSE users.role
+    END,
+    status = COALESCE(users.status, 'active');
+
   -- 동시성 제어: 동일 사용자의 동시 요청에서 중복 draft 생성 방지
   PERFORM pg_advisory_xact_lock(hashtext(p_user_id::text));
 
