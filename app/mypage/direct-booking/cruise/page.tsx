@@ -323,17 +323,19 @@ export default function CruiseBookingPage() {
         <div className="space-y-4">
           {/* 크루즈 차량 추가 */}
           <div className="border rounded-lg p-4 bg-gray-50">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} />
-              <Car className="w-4 h-4 text-gray-600" />크루즈 차량 예약 추가
+            <label className="flex items-center justify-between text-sm font-medium">
+              <span className="flex items-center gap-2">
+                <Car className="w-4 h-4 text-gray-600" />크루즈 차량 예약 추가
+              </span>
+              <input type="checkbox" checked={addCar} onChange={(e) => setAddCar(e.target.checked)} className="w-4 h-4" />
             </label>
           </div>
 
           {/* 커넥팅룸 */}
           <div className="border rounded-lg p-4 bg-gray-50">
-            <label className="flex items-center gap-2 text-sm font-medium mb-2">
-              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} />
-              커넥팅 룸
+            <label className="flex items-center justify-between text-sm font-medium mb-2">
+              <span>커넥팅 룸</span>
+              <input type="checkbox" checked={connectingRoom} onChange={(e) => setConnectingRoom(e.target.checked)} className="w-4 h-4" />
             </label>
             {connectingRoom && (
               <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-gray-700">
@@ -345,9 +347,9 @@ export default function CruiseBookingPage() {
 
           {/* 생일축하 */}
           <div className="border rounded-lg p-4 bg-gray-50">
-            <label className="flex items-center gap-2 text-sm font-medium mb-2">
-              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} />
-              생일 축하 이벤트
+            <label className="flex items-center justify-between text-sm font-medium mb-2">
+              <span>생일 축하 이벤트</span>
+              <input type="checkbox" checked={birthdayEvent} onChange={(e) => setBirthdayEvent(e.target.checked)} className="w-4 h-4" />
             </label>
             {birthdayEvent && (
               <>
