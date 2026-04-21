@@ -228,15 +228,20 @@ export async function saveHotelDetail(
     const unitPrice = Number(hotel.base_price ?? hotel.price ?? 0);
     const roomCount = Number(formData.room_count) || 1;
     const nights = Number(payload.nights) || 1;
+    const adultCount = Number(formData.adult_count) || 1;
+    const childCount = Number(formData.child_count) || 0;
 
     const { error } = await supabase.from('reservation_hotel').insert({
       reservation_id: reservationId,
       hotel_price_code: hotel.hotel_price_code ?? null,
       schedule: payload.schedule ?? null,
       room_count: roomCount,
-      guest_count: (Number(formData.adult_count) || 0) + (Number(formData.child_count) || 0) || 1,
+      guest_count: adultCount + childCount,
+      adult_count: adultCount,
+      child_count: childCount,
       checkin_date: formData.checkin_date ?? null,
-      checkout_date: formData.checkout_date ?? null,
+      breakfast_service: null,
+      hotel_category: hotel.hotel_name ?? null,
       unit_price: unitPrice,
       total_price: unitPrice * roomCount * nights,
       request_note: formData.special_requests ?? null,
