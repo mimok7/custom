@@ -24,11 +24,9 @@ export default function DirectBookingPage() {
   const router = useRouter();
   const { data: reservations = [], isLoading: reservationsLoading } = useReservations(user?.id);
 
-  // 서비스별 완료 예약 확인
+  // 서비스별 예약 확인 (모든 상태의 예약 표시)
   const completedServices = new Set(
-    reservations
-      .filter((res) => res.re_status === 'completed')
-      .map((res) => res.re_type),
+    reservations.map((res) => res.re_type),
   );
 
   if (loading || reservationsLoading) return <Spinner className="h-72" />;
