@@ -15,9 +15,9 @@ interface HotelPriceRow {
   hotel_name: string;
   room_name: string;
   base_price: number;
-  weekday: string;
-  valid_from: string;
-  valid_to: string;
+  weekday_type: string;
+  start_date: string;
+  end_date: string;
 }
 
 function calculateNights(checkin: string, checkout: string): number {
@@ -47,15 +47,21 @@ export default function HotelBookingPage() {
 
   /* ── 호텔 가격 로드 ── */
   useEffect(() => {
-    supabase
-      .from('hotel_price')
-      .select('hotel_price_code, hotel_name, room_name, base_price, weekday, valid_from, valid_to')
-      .then(({ data }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('hotel_price')
+          .select('hotel_price_code, hotel_name, room_name, base_price, weekday_type, start_date, end_date')
+          .order('hotel_name');
+        if (error) throw error;
         if (data) {
           setHotelPrices(data);
-          setHotelNames([...new Set(data.map((r) => r.hotel_name))]);
+          setHotelNames([...new Set(data.map((r) => r.hotel_name))].sort());
         }
-      });
+      } catch (err) {
+        console.error('호텔 로드 오류:', err);
+      }
+    })();
   }, []);
 
   /* ── 호텔 선택 시 객실 필터 ── */
@@ -70,13 +76,18 @@ export default function HotelBookingPage() {
   const matchedPrice = useMemo(() => {
     if (!selectedHotel || !selectedRoom || !checkinDate) return null;
     const weekday = ['일', '월', '화', '수', '목', '금', '토'][new Date(checkinDate).getDay()];
+    const dayOfWeek = new Date(checkinDate).getDay();
+    const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
+    
     return hotelPrices.find(
       (r) =>
         r.hotel_name === selectedHotel &&
         r.room_name === selectedRoom &&
-        r.weekday === weekday &&
-        r.valid_from <= checkinDate &&
-        r.valid_to >= checkinDate,
+        r.start_date <= checkinDate &&
+        r.end_date >= checkinDate &&
+        (r.weekday_type === 'ALL' || 
+         (r.weekday_type === 'WEEKEND' && isWeekend) ||
+         (r.weekday_type === 'WEEKDAY' && !isWeekend)),
     ) ?? hotelPrices.find(
       (r) => r.hotel_name === selectedHotel && r.room_name === selectedRoom,
     ) ?? null;

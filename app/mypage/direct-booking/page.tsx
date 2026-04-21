@@ -44,10 +44,8 @@ export default function DirectBookingPage() {
               className="card flex items-start gap-4 text-left hover:shadow-md transition-shadow relative"
             >
               {isCompleted && (
-                <div className="absolute -top-2 -right-2 w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 transform rotate-45 shadow-lg flex items-center justify-center">
-                  <div className="transform -rotate-45 text-white font-bold text-xs whitespace-nowrap">
-                    완료
-                  </div>
+                <div className="absolute -top-2 -right-2 bg-gradient-to-br from-green-400 to-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md whitespace-nowrap">
+                  ✓ 완료
                 </div>
               )}
               <div className={`p-3 rounded-lg ${color}`}>
