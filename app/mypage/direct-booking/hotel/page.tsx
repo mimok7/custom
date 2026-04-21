@@ -8,7 +8,6 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { Hotel } from 'lucide-react';
 
 interface HotelPriceRow {
@@ -96,7 +95,6 @@ export default function HotelBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('hotel', {
         formData: { checkin_date: checkinDate, checkout_date: checkoutDate, room_count: roomCount, adult_count: adultCount, child_count: childCount, special_requests: specialRequests },
         selectedHotel: matchedPrice ?? { hotel_name: selectedHotel, room_name: selectedRoom, hotel_price_code: '', base_price: 0 },

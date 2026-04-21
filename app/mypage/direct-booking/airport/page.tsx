@@ -8,7 +8,6 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { Plane } from 'lucide-react';
 
 interface AirportPrice {
@@ -202,7 +201,6 @@ export default function AirportBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('airport', {
         form: {
           serviceType,

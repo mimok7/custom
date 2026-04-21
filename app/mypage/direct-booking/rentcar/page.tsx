@@ -8,7 +8,6 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { Car, Plus, Trash2 } from 'lucide-react';
 
 interface RentcarPrice {
@@ -135,7 +134,6 @@ export default function RentcarBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('rentcar', { vehicles, requestNote });
       if (error) { alert(`예약 오류: ${error}`); return; }
       alert('렌터카 예약이 완료되었습니다! 다른 서비스를 계속 예약할 수 있습니다.');

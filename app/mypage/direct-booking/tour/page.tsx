@@ -8,7 +8,6 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { MapPin } from 'lucide-react';
 
 interface Tour {
@@ -109,7 +108,6 @@ export default function TourBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('tour', {
         formData: { tour_date: tourDate, pickup_location: pickupLocation, dropoff_location: dropoffLocation },
         matchedPricing,

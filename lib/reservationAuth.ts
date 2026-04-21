@@ -28,7 +28,9 @@ export async function ensureMemberRole(user: Record<string, unknown> | null): Pr
     .maybeSingle();
 
   if (fetchError) {
-    return `사용자 역할 조회 실패: ${fetchError.message}`;
+    // 역할 조회 실패는 예약 생성을 막지 않는다. 실제 insert 단계에서 FK/권한 오류를 노출한다.
+    console.warn('사용자 역할 조회 실패(예약 계속 진행):', fetchError.message);
+    return null;
   }
 
   if (!existingUser || existingUser.role === 'guest') {
@@ -39,12 +41,19 @@ export async function ensureMemberRole(user: Record<string, unknown> | null): Pr
           id: userId,
           email: userEmail,
           role: 'member',
+          created_at: now,
+          status: 'active',
           updated_at: now,
         },
         { onConflict: 'id' },
       );
 
     if (upsertError) {
+      if (existingUser) {
+        // 기존 사용자의 role 승급 실패는 치명적이지 않다.
+        console.warn('사용자 role 승급 실패(예약 계속 진행):', upsertError.message);
+        return null;
+      }
       return `사용자 역할 업데이트 실패: ${upsertError.message}`;
     }
   }

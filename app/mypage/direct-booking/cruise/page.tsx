@@ -20,7 +20,6 @@ import {
   type CruisePriceResult,
 } from '@/lib/cruisePriceCalculator';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { ChevronDown, Plus, Trash2, Ship, Car, AlertCircle } from 'lucide-react';
 
 interface RoomSelection {
@@ -235,7 +234,6 @@ export default function CruiseBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('cruise', {
         form: { checkin, schedule, cruise_name: cruiseName, room_request_note: requestNote, connecting_room: connectingRoom, birthday_event: birthdayEvent, birthday_name: birthdayName, pickup_location: pickupLocation },
         roomSelections,

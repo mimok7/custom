@@ -8,7 +8,6 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { Package, Info } from 'lucide-react';
 
 interface PackageMaster {
@@ -75,7 +74,6 @@ export default function PackageBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('package', {
         selectedPackage,
         applicantData: {

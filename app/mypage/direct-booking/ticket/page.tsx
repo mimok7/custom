@@ -8,7 +8,6 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { refreshAuthBeforeSubmit } from '@/lib/authHelpers';
 import { Ticket } from 'lucide-react';
 
 interface Tour {
@@ -89,7 +88,6 @@ export default function TicketBookingPage() {
 
     setSubmitting(true);
     try {
-      await refreshAuthBeforeSubmit();
       const { error } = await submitReservation('ticket', {
         formData: { tour_date: ticketDate, pickup_location: pickupLocation, dropoff_location: dropoffLocation },
         matchedPricing: selectedTourId ? { pricing_id: selectedTourId } : null,
