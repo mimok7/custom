@@ -9,65 +9,81 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: 
   ]);
 }
 
+let sessionUserPromise: Promise<{ user: Record<string, unknown> | null; error: unknown }> | null = null;
+let refreshSessionPromise: Promise<{ user: Record<string, unknown> | null; error?: unknown }> | null = null;
+
 /** 로컬 세션에서 사용자 조회 (네트워크 타임아웃 10초) */
 export async function getSessionUser(
   timeoutMs = 10000,
 ): Promise<{ user: Record<string, unknown> | null; error: unknown }> {
-  try {
-    const { data: { session } } = await withTimeout(
-      supabase.auth.getSession(),
-      timeoutMs,
-      `Auth session check timed out (${timeoutMs}ms)`,
-    );
-    if (session?.user) return { user: session.user as Record<string, unknown>, error: null };
+  if (!sessionUserPromise) {
+    sessionUserPromise = (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          return { user: session.user as Record<string, unknown>, error: null };
+        }
 
-    const userResult = await withTimeout(
-      supabase.auth.getUser(),
-      timeoutMs,
-      `Auth user check timed out (${timeoutMs}ms)`,
-    );
-    return { user: userResult.data.user as Record<string, unknown> | null, error: userResult.error };
-  } catch (err) {
-    return { user: null, error: err };
+        const userResult = await supabase.auth.getUser();
+        return {
+          user: userResult.data.user as Record<string, unknown> | null,
+          error: userResult.error,
+        };
+      } catch (err) {
+        return { user: null, error: err };
+      } finally {
+        sessionUserPromise = null;
+      }
+    })();
   }
+
+  return withTimeout(
+    sessionUserPromise,
+    timeoutMs,
+    `Auth session check timed out (${timeoutMs}ms)`,
+  );
 }
 
 /** 토큰 만료 임박 시 세션 갱신 (제출 직전 호출) */
 export async function refreshAuthBeforeSubmit(
   timeoutMs = 8000,
 ): Promise<{ user: Record<string, unknown> | null; error?: unknown }> {
-  try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-    if (error || !session) {
-      return { user: null, error: error || new Error('No active session') };
-    }
-
-    const expiresAt = session.expires_at;
-    const now = Math.floor(Date.now() / 1000);
-
-    if (expiresAt && expiresAt - now < 300) {
+  if (!refreshSessionPromise) {
+    refreshSessionPromise = (async () => {
       try {
-        const result = await withTimeout(
-          supabase.auth.refreshSession(),
-          timeoutMs,
-          'Session refresh timed out',
-        );
-        if (result.error || !result.data.session) {
-          return { user: null, error: result.error || new Error('Session refresh failed') };
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+        if (error || !session) {
+          return { user: null, error: error || new Error('No active session') };
         }
-        return { user: result.data.session.user as Record<string, unknown>, error: null };
-      } catch (refreshErr) {
-        return { user: null, error: refreshErr };
-      }
-    }
 
-    return { user: session.user as Record<string, unknown>, error: null };
-  } catch (err) {
-    return { user: null, error: err };
+        const expiresAt = session.expires_at;
+        const now = Math.floor(Date.now() / 1000);
+
+        if (expiresAt && expiresAt - now < 300) {
+          const result = await supabase.auth.refreshSession();
+          if (result.error || !result.data.session) {
+            return { user: null, error: result.error || new Error('Session refresh failed') };
+          }
+          return { user: result.data.session.user as Record<string, unknown>, error: null };
+        }
+
+        return { user: session.user as Record<string, unknown>, error: null };
+      } catch (err) {
+        return { user: null, error: err };
+      } finally {
+        refreshSessionPromise = null;
+      }
+    })();
   }
+
+  return withTimeout(
+    refreshSessionPromise,
+    timeoutMs,
+    'Session refresh timed out',
+  );
 }
 
 /** Invalid Refresh Token 감지 */
