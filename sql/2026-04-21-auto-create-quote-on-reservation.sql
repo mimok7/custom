@@ -22,6 +22,15 @@ BEGIN
     RAISE EXCEPTION 'p_user_id is required';
   END IF;
 
+  -- quote.user_id는 auth.users(id)를 참조하므로, 인증 사용자가 없으면 생성 스킵
+  IF NOT EXISTS (
+    SELECT 1
+    FROM auth.users au
+    WHERE au.id = p_user_id
+  ) THEN
+    RETURN NULL;
+  END IF;
+
   -- quote.user_id FK 보장을 위해 users 행을 선행 보정
   INSERT INTO public.users (id, role, status, created_at, updated_at)
   VALUES (p_user_id, 'member', 'active', now(), now())
@@ -79,9 +88,14 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_quote_id uuid;
 BEGIN
   IF NEW.re_quote_id IS NULL THEN
-    NEW.re_quote_id := public.fn_get_or_create_draft_quote(NEW.re_user_id);
+    v_quote_id := public.fn_get_or_create_draft_quote(NEW.re_user_id);
+    IF v_quote_id IS NOT NULL THEN
+      NEW.re_quote_id := v_quote_id;
+    END IF;
   END IF;
 
   RETURN NEW;
@@ -98,6 +112,11 @@ EXECUTE FUNCTION public.fn_set_reservation_quote_id();
 UPDATE public.reservation r
 SET re_quote_id = public.fn_get_or_create_draft_quote(r.re_user_id)
 WHERE r.re_quote_id IS NULL
+  AND EXISTS (
+    SELECT 1
+    FROM auth.users au
+    WHERE au.id = r.re_user_id
+  )
   AND r.re_user_id IS NOT NULL;
 
 -- PostgREST 스키마 캐시 리로드
