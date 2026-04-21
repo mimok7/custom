@@ -40,6 +40,7 @@ export default function AirportBookingPage() {
   const [route, setRoute] = useState('');
   const [vehicleType, setVehicleType] = useState('');
   const [price1, setPrice1] = useState(0);
+  const [airportCode1, setAirportCode1] = useState<string | null>(null);
 
   // 양방향(both)에서 샌딩용 별도 필드
   const [routeOptions2, setRouteOptions2] = useState<string[]>([]);
@@ -47,6 +48,7 @@ export default function AirportBookingPage() {
   const [route2, setRoute2] = useState('');
   const [vehicleType2, setVehicleType2] = useState('');
   const [price2, setPrice2] = useState(0);
+  const [airportCode2, setAirportCode2] = useState<string | null>(null);
 
   // 상세
   const [pickupAirportLocation, setPickupAirportLocation] = useState('');
@@ -91,20 +93,26 @@ export default function AirportBookingPage() {
       setCategory('픽업');
       setRoute('');
       setVehicleType('');
+      setAirportCode1(null);
       setRoute2('');
       setVehicleType2('');
+      setAirportCode2(null);
     } else if (serviceType === 'sending') {
       setCategory('샌딩');
       setRoute('');
       setVehicleType('');
+      setAirportCode1(null);
       setRoute2('');
       setVehicleType2('');
+      setAirportCode2(null);
     } else if (serviceType === 'both') {
       setCategory('픽업');
       setRoute('');
       setVehicleType('');
+      setAirportCode1(null);
       setRoute2('');
       setVehicleType2('');
+      setAirportCode2(null);
     }
   }, [serviceType]);
 
@@ -182,6 +190,49 @@ export default function AirportBookingPage() {
       lookupPrice(category, route2, vehicleType2).then(setPrice2);
   }, [vehicleType2, route2, category, serviceType, lookupPrice]);
 
+  /* ── 공항 코드 + 가격 조회 (service_type, route, vehicle_type) ── */
+  const lookupAirportCode = useCallback(
+    async (cat: string, rt: string, vt: string, codeSetterIdx: number) => {
+      const { data } = await supabase
+        .from('airport_price')
+        .select('airport_code, price')
+        .eq('service_type', cat)
+        .eq('route', rt)
+        .eq('vehicle_type', vt)
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        if (codeSetterIdx === 1) {
+          setAirportCode1(data.airport_code);
+          setPrice1(data.price ?? 0);
+        } else {
+          setAirportCode2(data.airport_code);
+          setPrice2(data.price ?? 0);
+        }
+      }
+    },
+    [],
+  );
+
+  /* ── 픽업 차종 선택 시 공항 코드 조회 ── */
+  useEffect(() => {
+    if (vehicleType && route && category) {
+      lookupAirportCode(category, route, vehicleType, 1);
+    } else {
+      setAirportCode1(null);
+    }
+  }, [vehicleType, route, category, lookupAirportCode]);
+
+  /* ── 샌딩 차종 선택 시 공항 코드 조회 ── */
+  useEffect(() => {
+    if (vehicleType2 && route2 && serviceType === 'both') {
+      lookupAirportCode('샌딩', route2, vehicleType2, 2);
+    } else {
+      setAirportCode2(null);
+    }
+  }, [vehicleType2, route2, serviceType, lookupAirportCode]);
+
   /* ── 영문 검증 ── */
   useEffect(() => {
     const hasErr = hasKorean(pickupLocation) || hasKorean(sendingLocation);
@@ -217,8 +268,8 @@ export default function AirportBookingPage() {
           sendingFlightNumber: needSending ? sendingFlight : undefined,
           passengerCount,
           luggageCount,
-          airportCode1: category ? `${category}_${route}_${vehicleType}` : null,
-          airportCode2: serviceType === 'both' ? `${category}_${route2}_${vehicleType2}` : null,
+          airportCode1,
+          airportCode2: serviceType === 'both' ? airportCode2 : null,
         },
         price1,
         price2,
