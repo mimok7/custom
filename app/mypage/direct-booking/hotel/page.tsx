@@ -38,9 +38,9 @@ export default function HotelBookingPage() {
 
   const [checkinDate, setCheckinDate] = useState('');
   const [checkoutDate, setCheckoutDate] = useState('');
-  const [roomCount, setRoomCount] = useState(1);
-  const [adultCount, setAdultCount] = useState(2);
-  const [childCount, setChildCount] = useState(0);
+  const [roomCount, setRoomCount] = useState<number>(1);
+  const [adultCount, setAdultCount] = useState<number>(2);
+  const [childCount, setChildCount] = useState<number>(0);
   const [specialRequests, setSpecialRequests] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -103,12 +103,13 @@ export default function HotelBookingPage() {
     if (!selectedHotel || !selectedRoom) { alert('호텔 / 객실을 선택하세요.'); return; }
     if (!checkinDate || !checkoutDate) { alert('체크인/아웃 날짜를 입력하세요.'); return; }
     if (nights <= 0) { alert('체크아웃은 체크인 이후여야 합니다.'); return; }
+    if (!matchedPrice) { alert('선택한 호텔/객실/날짜의 가격 정보를 찾을 수 없습니다.'); return; }
 
     setSubmitting(true);
     try {
       const { error } = await submitReservation('hotel', {
         formData: { checkin_date: checkinDate, checkout_date: checkoutDate, room_count: roomCount, adult_count: adultCount, child_count: childCount, special_requests: specialRequests },
-        selectedHotel: matchedPrice ?? { hotel_name: selectedHotel, room_name: selectedRoom, hotel_price_code: '', base_price: 0 },
+        selectedHotel: matchedPrice,
         nights,
         schedule,
       });
@@ -162,15 +163,15 @@ export default function HotelBookingPage() {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">객실 수</label>
-            <input type="number" min={1} value={roomCount || ''} onChange={(e) => setRoomCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+            <input type="number" min={1} value={roomCount} onChange={(e) => setRoomCount(Math.max(1, Number(e.target.value) || 1))} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">성인</label>
-            <input type="number" min={1} value={adultCount || ''} onChange={(e) => setAdultCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+            <input type="number" min={1} value={adultCount} onChange={(e) => setAdultCount(Math.max(1, Number(e.target.value) || 1))} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">아동</label>
-            <input type="number" min={0} value={childCount || ''} onChange={(e) => setChildCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+            <input type="number" min={0} value={childCount} onChange={(e) => setChildCount(Math.max(0, Number(e.target.value) || 0))} />
           </div>
         </div>
       </SectionBox>
