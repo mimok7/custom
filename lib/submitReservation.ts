@@ -174,7 +174,7 @@ export async function saveAirportDetail(
       rows.push({
         reservation_id: reservationId,
         airport_price_code: form.airportCode1 ?? null,
-        ra_airport_location: form.pickupAirportName ?? form.airportName ?? null,
+        ra_airport_location: form.pickupAirportLocation ?? null,
         accommodation_info: form.pickupLocation ?? null,
         ra_flight_number: form.pickupFlightNumber ?? null,
         ra_datetime: form.pickupDatetime ?? null,
@@ -193,7 +193,7 @@ export async function saveAirportDetail(
       rows.push({
         reservation_id: reservationId,
         airport_price_code: code ?? null,
-        ra_airport_location: form.sendingAirportName ?? form.airportName ?? null,
+        ra_airport_location: form.sendingAirportLocation ?? null,
         accommodation_info: form.sendingLocation ?? null,
         ra_flight_number: form.sendingFlightNumber ?? null,
         ra_datetime: form.sendingDatetime ?? null,
