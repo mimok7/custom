@@ -58,6 +58,7 @@ export default function TourBookingPage() {
     supabase
       .from('tour')
       .select('tour_id, tour_code, tour_name')
+      .eq('is_active', true)
       .neq('is_cruise_addon', true)
       .then(({ data }) => {
         if (data) setTours(data);
@@ -102,8 +103,8 @@ export default function TourBookingPage() {
 
     const noteLines: string[] = [];
     noteLines.push(`[점심식사] ${lunchOption}`);
-    noteLines.push(`[투어코스] ${tourCourse}`);
-    if (nightTour !== '선택안함') noteLines.push(`[야간투어] ${nightTour}`);
+    noteLines.push(`[투어 코스] ${tourCourse}`);
+    if (nightTour !== '선택안함') noteLines.push(`[포코 호아루 야경 투어] ${nightTour}`);
     if (specialRequests) noteLines.push(`[요청사항] ${specialRequests}`);
 
     setSubmitting(true);
