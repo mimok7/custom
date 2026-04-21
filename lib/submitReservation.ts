@@ -10,7 +10,7 @@ export interface SubmitResult {
 async function createReservation(
   userId: string,
   serviceType: string,
-): Promise<{ id: string | null; error: string | null }> {
+): Promise<{ id: string | null; quoteId: string | null; error: string | null }> {
   const { data, error } = await supabase
     .from('reservation')
     .insert({
@@ -18,11 +18,15 @@ async function createReservation(
       re_type: serviceType,
       re_status: 'pending',
     })
-    .select('re_id')
+    .select('re_id,re_quote_id')
     .single();
 
-  if (error) return { id: null, error: `reservation 생성 실패: ${error.message}` };
-  return { id: data.re_id as string, error: null };
+  if (error) return { id: null, quoteId: null, error: `reservation 생성 실패: ${error.message}` };
+  return {
+    id: data.re_id as string,
+    quoteId: (data.re_quote_id as string | null) ?? null,
+    error: null,
+  };
 }
 
 /* ─────── 서비스별 상세 저장 ─────── */
@@ -94,6 +98,7 @@ export async function saveCruiseDetail(
     /* ── 크루즈 차량 저장 ── */
     const carData = payload.carData as Record<string, unknown> | null;
     const userId = payload.userId ? String(payload.userId) : '';
+    const quoteId = payload.quoteId ? String(payload.quoteId) : null;
     if (carData && carData.car_code) {
       const isShuttle = String(carData.car_type ?? '').includes('셔틀') && !String(carData.car_type ?? '').includes('단독');
       const inputCount = Number(carData.car_count) || 1;
@@ -112,6 +117,7 @@ export async function saveCruiseDetail(
       if (userId) {
         const { data: carRes } = await supabase.from('reservation').insert({
           re_user_id: userId,
+          re_quote_id: quoteId,
           re_type: 'car',
           re_status: 'pending',
           total_amount: totalPrice,
@@ -375,10 +381,14 @@ export async function submitReservation(
     return { reservationId: null, error: message };
   }
 
-  const payloadWithUser = { ...payload, userId: String(user.id) };
-
-  const { id, error: createErr } = await createReservation(String(user.id), serviceType);
+  const { id, quoteId, error: createErr } = await createReservation(String(user.id), serviceType);
   if (createErr || !id) return { reservationId: null, error: createErr ?? '예약 생성 실패' };
+
+  const payloadWithUser = {
+    ...payload,
+    userId: String(user.id),
+    quoteId,
+  };
 
   const saveFn = SAVE_MAP[serviceType];
   if (saveFn) {
