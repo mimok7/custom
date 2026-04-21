@@ -21,7 +21,7 @@ interface PackageMaster {
 }
 
 export default function PackageBookingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [packages, setPackages] = useState<PackageMaster[]>([]);
@@ -93,7 +93,7 @@ export default function PackageBookingPage() {
   };
 
   if (authLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="패키지 예약" description="올인원 패키지 상품을 예약하세요">

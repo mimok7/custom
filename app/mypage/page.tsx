@@ -16,7 +16,7 @@ interface Stats {
 }
 
 export default function MyPage() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth(undefined, '/login', true);
   const router = useRouter();
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, confirmed: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function MyPage() {
   }, [user]);
 
   if (loading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title={`${customerName}님 환영합니다.`} description="예약 현황을 한눈에 확인하세요">

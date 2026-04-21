@@ -34,7 +34,7 @@ const TOUR_COURSES = ['호아루(추천)', '짱안', '닌빈시내', '기타'];
 const NIGHT_TOUR_OPTIONS = ['선택안함', '하롱야시장투어', '하롱시내투어'];
 
 export default function TourBookingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [tours, setTours] = useState<Tour[]>([]);
@@ -125,7 +125,7 @@ export default function TourBookingPage() {
   };
 
   if (authLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="투어 예약" description="당일 투어를 예약하세요">

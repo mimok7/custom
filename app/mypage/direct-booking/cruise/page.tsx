@@ -51,7 +51,7 @@ const EMPTY_ROOM = (): RoomSelection => ({
 const SCHEDULES = ['1박2일', '2박3일', '당일'] as const;
 
 export default function CruiseBookingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   /* ── 폼 상태 ── */
@@ -250,7 +250,7 @@ export default function CruiseBookingPage() {
   };
 
   if (authLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="크루즈 예약" description="하롱베이 크루즈를 예약하세요">

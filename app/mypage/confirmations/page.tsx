@@ -30,7 +30,7 @@ const DETAIL_TABLE: Record<string, string> = {
 };
 
 export default function ConfirmationsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [reservations, setReservations] = useState<ConfirmableReservation[]>([]);
@@ -96,7 +96,7 @@ export default function ConfirmationsPage() {
   }, [user]);
 
   if (authLoading || loading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="예약 확인서" description="확정된 예약의 확인서를 다운로드하세요">

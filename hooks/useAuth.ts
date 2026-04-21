@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import { isInvalidRefreshTokenError, clearInvalidSession, getSessionUser } from '@/lib/authHelpers';
 import { queryClient } from '@/lib/queryClient';
+import { showToast } from '@/lib/toast';
 
 interface AuthState {
   user: Record<string, unknown> | null;
@@ -54,6 +55,7 @@ function persistCache() {
 export function useAuth(
   requiredRoles?: string[],
   redirectOnFail = '/login',
+  loginRequired = false,
 ) {
   const router = useRouter();
   const [state, setState] = useState<AuthState>({
@@ -72,6 +74,12 @@ export function useAuth(
       if (cancelled) return;
       setState((prev) => {
         if (!prev.loading) return prev;
+        showToast({
+          message: '인증 확인 시간이 초과되었습니다. 페이지를 새로고침해 주세요.',
+          type: 'warning',
+          duration: 0,
+          onRetry: () => window.location.reload(),
+        });
         return { ...prev, loading: false, error: new Error('AUTH_LOADING_TIMEOUT') };
       });
     }, 12000);
@@ -123,7 +131,7 @@ export function useAuth(
             await clearInvalidSession();
           }
           setState({ user: null, role: null, loading: false, error: userError as Error | null });
-          if (requiredRoles?.length) router.replace('/login');
+          if (requiredRoles?.length || loginRequired) router.replace('/login');
           return;
         }
 
@@ -162,7 +170,7 @@ export function useAuth(
             error: error as Error,
           });
         }
-        if (requiredRoles?.length) router.replace('/login');
+        if (requiredRoles?.length || loginRequired) router.replace('/login');
       } finally {
         checking = false;
       }

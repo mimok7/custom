@@ -29,7 +29,7 @@ const STATUS_BADGE: Record<string, { bg: string; label: string }> = {
 };
 
 export default function ReservationListPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const {
@@ -46,7 +46,7 @@ export default function ReservationListPage() {
   });
 
   if (authLoading || isLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   if (isError) {
     const message =

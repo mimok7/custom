@@ -27,7 +27,7 @@ function calculateNights(checkin: string, checkout: string): number {
 }
 
 export default function HotelBookingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [hotelPrices, setHotelPrices] = useState<HotelPriceRow[]>([]);
@@ -110,7 +110,7 @@ export default function HotelBookingPage() {
   };
 
   if (authLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="호텔 예약" description="호텔 객실을 예약하세요">

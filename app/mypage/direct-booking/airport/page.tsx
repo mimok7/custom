@@ -29,7 +29,7 @@ function hasKorean(text: string): boolean {
 }
 
 export default function AirportBookingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [serviceType, setServiceType] = useState<string>('both');
@@ -232,7 +232,7 @@ export default function AirportBookingPage() {
   };
 
   if (authLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   const needPickup = serviceType === 'pickup' || serviceType === 'both';
   const needSending = serviceType === 'sending' || serviceType === 'both';

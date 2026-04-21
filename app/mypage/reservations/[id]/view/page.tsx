@@ -96,7 +96,7 @@ function formatValue(key: string, value: unknown): string | null {
 export default function ReservationViewPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [reservation, setReservation] = useState<Reservation | null>(null);
@@ -154,7 +154,7 @@ export default function ReservationViewPage() {
   }, [id, user]);
 
   if (authLoading || loading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
   if (!reservation) return <PageWrapper title="예약 없음"><p className="text-gray-500">해당 예약을 찾을 수 없습니다.</p></PageWrapper>;
 
   const serviceType = reservation.re_type as string;

@@ -69,7 +69,7 @@ const EMPTY_VEHICLE = (): VehicleData => ({
 });
 
 export default function RentcarBookingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   const [vehicles, setVehicles] = useState<VehicleData[]>([EMPTY_VEHICLE()]);
@@ -144,7 +144,7 @@ export default function RentcarBookingPage() {
   };
 
   if (authLoading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="렌터카 예약" description="차량을 예약하세요"

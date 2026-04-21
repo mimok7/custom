@@ -19,11 +19,11 @@ const SERVICES = [
 ] as const;
 
 export default function DirectBookingPage() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth(undefined, '/login', true);
   const router = useRouter();
 
   if (loading) return <Spinner className="h-72" />;
-  if (!user) { router.replace('/login'); return null; }
+  if (!user) return null;
 
   return (
     <PageWrapper title="직접 예약" description="원하는 서비스를 선택하세요">

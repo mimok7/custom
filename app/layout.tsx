@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import '@/styles/globals.css';
 import QueryProvider from '@/components/providers/QueryProvider';
 import AlertProvider from '@/components/providers/AlertProvider';
+import ToastProvider from '@/components/providers/ToastProvider';
 import Header from '@/components/layout/Header';
 
 export const metadata: Metadata = {
@@ -19,10 +20,12 @@ export default function RootLayout({
       <body>
         <QueryProvider>
           <AlertProvider>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
+            <ToastProvider>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+              </div>
+            </ToastProvider>
           </AlertProvider>
         </QueryProvider>
       </body>
