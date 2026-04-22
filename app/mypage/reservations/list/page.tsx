@@ -19,6 +19,8 @@ const SERVICE_META: Record<string, { icon: typeof Ship; label: string; color: st
   rentcar:    { icon: Car,     label: '렌터카',   color: 'bg-red-50 text-red-600' },
   ticket:     { icon: Ticket,  label: '티켓',     color: 'bg-teal-50 text-teal-600' },
   package:    { icon: Package, label: '패키지',   color: 'bg-indigo-50 text-indigo-600' },
+  sht_car:    { icon: Car,     label: '스하차량', color: 'bg-indigo-50 text-indigo-600' },
+  sht:        { icon: Car,     label: '스하차량', color: 'bg-indigo-50 text-indigo-600' },
 };
 
 const STATUS_BADGE: Record<string, { bg: string; label: string }> = {
