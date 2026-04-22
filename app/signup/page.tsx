@@ -88,10 +88,12 @@ export default function SignupPage() {
 
           <form onSubmit={handleSignup} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="signup-name" className="block text-sm font-medium text-gray-700 mb-1">
                 이름
               </label>
               <input
+                id="signup-name"
+                name="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -102,10 +104,12 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700 mb-1">
                 이메일
               </label>
               <input
+                id="signup-email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -117,10 +121,12 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700 mb-1">
                 비밀번호
               </label>
               <input
+                id="signup-password"
+                name="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -132,10 +138,12 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="signup-confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
                 비밀번호 확인
               </label>
               <input
+                id="signup-confirm-password"
+                name="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
