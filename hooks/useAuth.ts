@@ -84,7 +84,7 @@ export function useAuth(
       });
     }, 12000);
 
-    const check = async (forceRefresh = false) => {
+    const check = async ({ forceRefresh = false, silent = false }: { forceRefresh?: boolean; silent?: boolean } = {}) => {
       if (checking) return;
       checking = true;
 
@@ -95,7 +95,7 @@ export function useAuth(
         } catch {
           /* SSR safe */
         }
-        if (!cancelled) {
+        if (!cancelled && !silent) {
           setState((prev) => ({ ...prev, loading: true }));
         }
       }
@@ -183,25 +183,13 @@ export function useAuth(
       }
     };
 
-    check();
-
-    const handleFocus = () => {
-      void check(true);
-    };
+    void check();
 
     const handleOnline = () => {
-      void check(true);
+      void check({ forceRefresh: true, silent: true });
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void check(true);
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
     window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const {
       data: { subscription },
@@ -267,9 +255,7 @@ export function useAuth(
     return () => {
       cancelled = true;
       clearTimeout(watchdogId);
-      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('online', handleOnline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       subscription.unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
