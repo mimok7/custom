@@ -7,7 +7,7 @@ import SectionBox from '@/components/layout/SectionBox';
 import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
-import { Ship, ClipboardList, FileText, Plus } from 'lucide-react';
+import { Ship, ClipboardList, Plus } from 'lucide-react';
 
 interface Stats {
   total: number;
@@ -77,7 +77,7 @@ export default function MyPage() {
 
       {/* 빠른 링크 */}
       <SectionBox title="바로가기">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button className="card flex items-center gap-3 hover:shadow-md transition-shadow text-left"
             onClick={() => router.push('/mypage/direct-booking')}>
             <div className="p-2 rounded-lg bg-blue-50 text-blue-600"><Plus className="w-5 h-5" /></div>
@@ -92,14 +92,6 @@ export default function MyPage() {
             <div>
               <p className="font-medium text-gray-900">예약 내역</p>
               <p className="text-xs text-gray-500">예약 목록 보기</p>
-            </div>
-          </button>
-          <button className="card flex items-center gap-3 hover:shadow-md transition-shadow text-left"
-            onClick={() => router.push('/mypage/confirmations')}>
-            <div className="p-2 rounded-lg bg-purple-50 text-purple-600"><FileText className="w-5 h-5" /></div>
-            <div>
-              <p className="font-medium text-gray-900">예약 확인서</p>
-              <p className="text-xs text-gray-500">PDF 다운로드</p>
             </div>
           </button>
         </div>
