@@ -34,7 +34,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 sht-customer3/
 ├── app/                    # Next.js App Router
 │   ├── mypage/            # 사용자 페이지
-│   │   ├── direct-booking/ # 직접 예약 (cruise, airport, hotel, tour, rentcar, package, ticket)
+│   │   ├── direct-booking/ # 예약하기 (cruise, airport, hotel, tour, rentcar, package, ticket)
 │   │   ├── reservations/  # 예약 관리
 │   │   └── confirmations/ # 확인 페이지
 │   └── api/               # API Routes

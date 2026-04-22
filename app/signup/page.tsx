@@ -39,10 +39,10 @@ export default function SignupPage() {
         return;
       }
 
-      alert('회원가입이 완료되었습니다. 로그인해주세요.');
+      alert('신규 예약 등록이 완료되었습니다. 로그인해주세요.');
       router.replace('/login');
     } catch {
-      setError('회원가입 중 오류가 발생했습니다.');
+      setError('신규 예약 등록 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-lg p-8">
           <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
-            회원가입
+            신규 예약
           </h1>
           <p className="text-center text-gray-500 text-sm mb-8">
             스테이 하롱 트레블
@@ -113,7 +113,7 @@ export default function SignupPage() {
               disabled={loading}
               className="btn btn-primary w-full py-3"
             >
-              {loading ? '가입 중...' : '회원가입'}
+              {loading ? '등록 중...' : '신규 예약'}
             </button>
           </form>
 

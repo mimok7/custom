@@ -83,7 +83,7 @@ export default function MyPage() {
             <div className="p-2 rounded-lg bg-blue-50 text-blue-600"><Plus className="w-5 h-5" /></div>
             <div>
               <p className="font-medium text-gray-900">새 예약</p>
-              <p className="text-xs text-gray-500">직접 예약하기</p>
+              <p className="text-xs text-gray-500">예약하기</p>
             </div>
           </button>
           <button className="card flex items-center gap-3 hover:shadow-md transition-shadow text-left"

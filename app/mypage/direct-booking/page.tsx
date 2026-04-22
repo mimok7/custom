@@ -33,7 +33,7 @@ export default function DirectBookingPage() {
   if (!user) return null;
 
   return (
-    <PageWrapper title="직접 예약" description="원하는 서비스를 선택하세요">
+    <PageWrapper title="예약하기" description="원하는 서비스를 선택하세요">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {SERVICES.map(({ key, label, icon: Icon, color, desc }) => {
           const isCompleted = completedServices.has(key);

@@ -10,7 +10,7 @@ import { Ship, Menu, X, LogOut, Home, Plus, ClipboardList, FileText } from 'luci
 
 const NAV_ITEMS = [
   { href: '/mypage', label: '홈', icon: Home },
-  { href: '/mypage/direct-booking', label: '직접 예약', icon: Plus },
+  { href: '/mypage/direct-booking', label: '예약하기', icon: Plus },
   { href: '/mypage/reservations/list', label: '예약 내역', icon: ClipboardList },
   { href: '/mypage/confirmations', label: '확인서', icon: FileText },
 ];
