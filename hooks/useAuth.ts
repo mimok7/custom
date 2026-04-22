@@ -47,6 +47,18 @@ function persistCache() {
   }
 }
 
+export function primeAuthCache(
+  user: Record<string, unknown> | null,
+  role: string | null = 'guest',
+) {
+  authCache = {
+    user,
+    role,
+    timestamp: Date.now(),
+  };
+  persistCache();
+}
+
 /**
  * 인증 및 권한 확인 훅
  * @param requiredRoles 필요 역할 배열 (예: ['member', 'manager'])

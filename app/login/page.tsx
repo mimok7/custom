@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import { primeAuthCache } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -18,7 +19,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -30,6 +31,11 @@ export default function LoginPage() {
             : authError.message,
         );
         return;
+      }
+
+      if (data.user) {
+        // 로그인 직후 보호 페이지가 먼저 마운트되더라도 동일 사용자로 인증 상태를 읽게 한다.
+        primeAuthCache(data.user as unknown as Record<string, unknown>);
       }
 
       router.replace('/mypage');
