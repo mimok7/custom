@@ -19,7 +19,7 @@ let authCache: {
   timestamp: number;
 } | null = null;
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5분
+const CACHE_DURATION = 30 * 60 * 1000; // 30분
 const AUTH_CACHE_KEY = 'app:auth:cache';
 
 function restoreCache() {
@@ -189,7 +189,15 @@ export function useAuth(
       void check({ forceRefresh: true, silent: true });
     };
 
+    // 탭 전환 시 로딩 스피너 없이 백그라운드 세션 확인
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void check({ forceRefresh: false, silent: true });
+      }
+    };
+
     window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const {
       data: { subscription },
@@ -210,6 +218,21 @@ export function useAuth(
         }
 
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+          // TOKEN_REFRESHED: 백그라운드 자동 갱신 → queryClient 삭제 불필요, 캐시만 업데이트
+          if (event === 'TOKEN_REFRESHED') {
+            if (authCache) {
+              authCache = {
+                ...authCache,
+                user: session.user as unknown as Record<string, unknown>,
+                timestamp: Date.now(),
+              };
+              persistCache();
+            }
+            // 이미 로그인된 상태이므로 state 변경 불필요
+            return;
+          }
+
+          // SIGNED_IN / USER_UPDATED: 캐시 초기화 및 역할 재조회
           authCache = null;
           try {
             sessionStorage.removeItem(AUTH_CACHE_KEY);
@@ -256,6 +279,7 @@ export function useAuth(
       cancelled = true;
       clearTimeout(watchdogId);
       window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       subscription.unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
