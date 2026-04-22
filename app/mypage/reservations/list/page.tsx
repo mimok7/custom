@@ -12,6 +12,7 @@ import { Ship, Plane, Hotel, MapPin, Car, Ticket, Package, Eye } from 'lucide-re
 
 const SERVICE_META: Record<string, { icon: typeof Ship; label: string; color: string }> = {
   cruise:     { icon: Ship,    label: '크루즈',   color: 'bg-blue-50 text-blue-600' },
+  car:        { icon: Car,     label: '크루즈 차량', color: 'bg-cyan-50 text-cyan-600' },
   airport:    { icon: Plane,   label: '공항',     color: 'bg-orange-50 text-orange-600' },
   hotel:      { icon: Hotel,   label: '호텔',     color: 'bg-purple-50 text-purple-600' },
   tour:       { icon: MapPin,  label: '투어',     color: 'bg-green-50 text-green-600' },

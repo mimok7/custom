@@ -12,7 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 
 const SERVICE_LABELS: Record<string, string> = {
   cruise: '크루즈', airport: '공항 이동', hotel: '호텔',
-  tour: '투어', rentcar: '렌터카', ticket: '티켓', package: '패키지',
+  tour: '투어', rentcar: '렌터카', ticket: '티켓', package: '패키지', car: '크루즈 차량',
 };
 
 const STATUS_MAP: Record<string, { bg: string; label: string }> = {
@@ -28,6 +28,7 @@ type Reservation = Record<string, unknown>;
 
 const DETAIL_TABLE: Record<string, string> = {
   cruise: 'reservation_cruise',
+  car: 'reservation_cruise_car',
   airport: 'reservation_airport',
   hotel: 'reservation_hotel',
   tour: 'reservation_tour',
@@ -42,6 +43,12 @@ const FIELD_LABELS: Record<string, Record<string, string>> = {
     adult_count: '성인', child_count: '아동', infant_count: '유아',
     room_count: '객실 수', room_total_price: '총 가격', request_note: '요청사항',
     connecting_room: '커넥팅 룸', birthday_event: '생일 이벤트',
+  },
+  car: {
+    way_type: '유형', route: '노선', vehicle_type: '차량 유형',
+    car_count: '차량 대수', passenger_count: '인원', pickup_datetime: '출발 일시',
+    pickup_location: '출발지', dropoff_location: '도착지', unit_price: '단가',
+    car_total_price: '총 가격', request_note: '요청사항',
   },
   airport: {
     way_type: '편도/왕복', ra_airport_location: '공항', ra_flight_number: '항공편',
