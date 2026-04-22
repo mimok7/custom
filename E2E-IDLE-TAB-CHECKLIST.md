@@ -101,6 +101,40 @@
 
 ---
 
+## 시나리오 G: 예약 내역 페이지(목록/상세) 유휴 복귀
+
+### 절차
+1. [ ] `/mypage/reservations/list` 접속 후 데이터가 보이는 상태 확인
+2. [ ] 탭을 20~30분 유휴 상태로 둠
+3. [ ] 탭 복귀 후 목록 카드 클릭 → `/mypage/reservations/{id}/view` 이동
+4. [ ] 브라우저 뒤로 가기 후 목록 재진입
+
+### 기대 결과
+- [ ] 복귀 직후 무한 로딩 없이 10초 내 목록 렌더
+- [ ] 상세 페이지 이동 시 즉시 `/login` 강제 이동이 발생하지 않음
+- [ ] 목록 재진입 시 스피너 후 데이터가 정상 복원됨
+- [ ] Console에 auth timeout/uncaught 오류가 누적되지 않음
+
+---
+
+## 2026-04-22 점검 결과 (코드 기준)
+
+> 실행 기반 E2E(브라우저 실측)는 미실행. 아래는 코드 경로 점검 결과입니다.
+
+### 공통 인증 헬퍼
+- [x] `lib/authHelpers.ts`에서 stale promise timeout 루프 차단 반영 완료
+- [x] idle 이후 `getSession/getUser` 지연 시 저장 세션 fallback 경로 존재
+
+### 예약 내역 관련 페이지
+- [x] `app/mypage/reservations/list/page.tsx`: `useAuth` 공통 가드 사용
+- [x] `app/mypage/reservations/[id]/view/page.tsx`: `useAuth` 공통 가드 사용
+
+### 판정
+- [x] 예약 내역 페이지 인증 경로는 공통 훅 중심으로 정리됨
+- [x] 고객 프로젝트 대비 idle 복귀 리스크가 상대적으로 낮음
+
+---
+
 ## 자동화 참고 (Playwright)
 
 > 아래는 향후 Playwright E2E로 전환 시 참고할 의사코드입니다.
@@ -131,3 +165,4 @@ test('30분 유휴 후 포커스 복귀 - 무한 로딩 없음', async ({ page, 
 | 버전 | 날짜 | 변경 내용 |
 |------|------|----------|
 | v1.0 | 2026-04-21 | 최초 작성 (focus/online/visibilitychange 재인증 + loginRequired 패턴 반영) |
+| v1.1 | 2026-04-22 | 예약 내역 전용 시나리오(G) 및 코드 점검 결과 추가 |
