@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Spinner from '@/components/ui/Spinner';
 import { useReservations } from '@/hooks/useQueries';
 import {
-  Ship, Plane, Hotel, MapPin, Car, Ticket, Package,
+  Ship, Plane, Hotel, MapPin, Car,
 } from 'lucide-react';
 
 const SERVICES = [
@@ -16,8 +16,6 @@ const SERVICES = [
   { key: 'hotel',   label: '호텔',       icon: Hotel,   color: 'bg-purple-50 text-purple-600', desc: '호텔 객실 예약' },
   { key: 'tour',    label: '투어',       icon: MapPin,  color: 'bg-orange-50 text-orange-600', desc: '당일 투어 예약' },
   { key: 'rentcar', label: '렌터카',     icon: Car,     color: 'bg-red-50 text-red-600',      desc: '렌터카 / 차량 예약' },
-  { key: 'ticket',  label: '티켓',       icon: Ticket,  color: 'bg-teal-50 text-teal-600',    desc: '드래곤펄 / 기타 티켓' },
-  { key: 'package', label: '패키지',     icon: Package, color: 'bg-indigo-50 text-indigo-600', desc: '패키지 상품 예약' },
 ] as const;
 
 export default function DirectBookingPage() {
@@ -31,8 +29,6 @@ export default function DirectBookingPage() {
   const [showHotelModal, setShowHotelModal] = useState(false);
   const [showTourModal, setShowTourModal] = useState(false);
   const [showRentcarModal, setShowRentcarModal] = useState(false);
-  const [showPackageModal, setShowPackageModal] = useState(false);
-  const [showTicketModal, setShowTicketModal] = useState(false);
 
   // 서비스별 예약 확인 (모든 상태의 예약 표시)
   const completedServices = new Set(
@@ -47,8 +43,6 @@ export default function DirectBookingPage() {
     else if (key === 'hotel') setShowHotelModal(true);
     else if (key === 'tour') setShowTourModal(true);
     else if (key === 'rentcar') setShowRentcarModal(true);
-    else if (key === 'package') setShowPackageModal(true);
-    else if (key === 'ticket') setShowTicketModal(true);
     else router.push(url);
   };
 
@@ -337,83 +331,6 @@ export default function DirectBookingPage() {
         </div>
       )}
 
-      {/* 패키지 안내 모달 */}
-      {showPackageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">📦 패키지 예약 안내</h2>
-            <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
-                <p className="font-semibold text-amber-900">스테이하롱의 올인원 패키지 상품입니다.</p>
-                <p className="text-amber-800 mt-2">크루즈, 공항 픽업/샌딩, 차량 서비스가 모두 포함되어 편리하게 예약하실 수 있습니다.</p>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="font-bold text-red-600 flex items-start gap-2 mb-2"><span>🚩</span><span>패키지 포함 사항</span></p>
-                  <ul className="space-y-1 ml-6 text-gray-700">
-                    <li className="flex gap-2"><span>∙</span><span>선택하신 패키지에 따라 크루즈, 공항 픽업/샌딩, 투어, 차량 서비스가 포함됩니다.</span></li>
-                    <li className="flex gap-2"><span>∙</span><span>각 패키지별 상세 구성 항목을 반드시 확인 해 주세요.</span></li>
-                  </ul>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mt-4">
-                  <p className="font-semibold text-gray-900 mb-2">중요 안내</p>
-                  <p className="text-gray-700 leading-relaxed">패키지 예약 시 각 구성 항목별로 예약이 생성되며, 통합 관리가 가능합니다. 일정 변경이나 취소 시 패키지 전체에 영향이 있을 수 있으니 주의 부탁드립니다.</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-gray-800 mb-4 mt-4">
-              <p className="font-semibold">∙ 예약신청자는 신청서 접수 시 위의 항목에 동의하는 것으로 간주됩니다.</p>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => cancel(() => setShowPackageModal(false))} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">취소</button>
-              <button onClick={() => confirm(() => setShowPackageModal(false))} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">확인</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 티켓 안내 모달 */}
-      {showTicketModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">🎫 티켓 예약 안내</h2>
-            <div className="space-y-6 text-sm text-gray-700 leading-relaxed">
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                <p className="font-bold text-gray-900 mb-3 flex items-center gap-2"><span className="text-teal-600">✓</span> 취소 규정</p>
-                <ul className="space-y-1.5 ml-2 text-gray-700">
-                  <li>· 부킹 바우쳐, 코드 발급 전 까지 : 1인당 5만동의 취소 수수료 발생</li>
-                  <li>· 바우쳐 발급 후 이용일자 31일 전 까지 : 1인당 10만동의 취소 수수료 발생</li>
-                  <li>· 이용일자 21일전 부터 30일 전 까지 : 15% 위약금 발생</li>
-                  <li>· 이용일자 11일 전 부터 20일 전 까지 : 25% 위약금 발생</li>
-                  <li>· 이용일자 10일 전 부터 : 취소 및 환불, 날짜변경 불가</li>
-                </ul>
-                <p className="mt-3 text-gray-700">. 요코온센 상품은 구매 후 취소가 불가합니다.</p>
-              </div>
-              <div className="space-y-3 text-gray-700">
-                <p>천재지변, 태풍으로 인한 안전위험 등이 발생하여 공연 및 레스토랑 운영이 불가한 경우, 취소규정과는 무관하게 전액 반환 됩니다.</p>
-                <p>스테이하롱을 통한 예약은 취소신청서 작성일로 부터 통상 1개월 정도의 환불대기 기간이 발생하며 이는 주말, 공휴일, 명절기간을 제외한 기간 입니다. (일반적인 기간이므로, 이보다 짧을 수도 있고 길어질 수도 있습니다.)</p>
-                <p>환불기간 대기가 어려우신 분들은 양도자를 구하는 방법으로 하여 보다 빠르게 환불을 받으실 수도 있습니다.</p>
-              </div>
-              <div className="space-y-3 text-gray-700">
-                <p className="font-semibold">▶ 신용카드 결제 고객 :</p>
-                <p>카드매출 취소가 가능한 시점인 경우는 카드사 측에 취소접수로 진행되며, 카드매출 취소가 불가한 시점인 경우는 회원님의 카드사에서 결제 된 원화금액이 아닌, 베트남동 금액을 기준으로 하여 반환되는 날의 네이버 환율 (하나은행 / 매매기준율 / 환율우대 적용없음) 을 기준으로 고객님이 한국, 원화계좌로 반환됩니다.</p>
-              </div>
-              <div className="space-y-3 text-gray-700">
-                <p className="font-semibold">▶ 교통사고, 질병으로 인한 취소 :</p>
-                <p>교통사고로 인한 수술, 입원, 또는 생명에 지장이 있는 위급한 질병등의 발견에 따른 병원입원 등으로 취소불가 기간, 또는 수수료 발생기간에 여행을 취소하시는 경우, 영문진단서를 제출 해 주셔야 하며, 운영사의 심사에 따라 환자 본인에 한해서만 위 취소규정 적용 없이 반환을 받으실 수 있습니다.</p>
-                <p>단, 100% 환불이 보장되는 것이 아니라 운영사 측에서 진단서의 내용상 위중 정도, 치료의 필요성 등을 판단, 취소규정을 그대로 적용할 수도 있습니다.</p>
-              </div>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-gray-800 mb-4 mt-8">
-              <p className="font-semibold">∙ 예약신청자는 신청서 접수 시 위의 항목에 동의하는 것으로 간주됩니다.</p>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => cancel(() => setShowTicketModal(false))} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">취소</button>
-              <button onClick={() => confirm(() => setShowTicketModal(false))} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">확인</button>
-            </div>
-          </div>
-        </div>
-      )}
     </PageWrapper>
   );
 }
