@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,6 +18,10 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
 
+    if (!name.trim()) {
+      setError('이름은 필수 입력 항목입니다.');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
@@ -32,6 +37,11 @@ export default function SignupPage() {
       const { error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          data: {
+            name: name.trim(),
+          },
+        },
       });
 
       if (authError) {
@@ -65,6 +75,20 @@ export default function SignupPage() {
           <form onSubmit={handleSignup} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                이름
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="예를 들면: 김영근"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 이메일
               </label>
               <input
@@ -74,6 +98,7 @@ export default function SignupPage() {
                 required
                 autoComplete="email"
                 placeholder="이메일 주소"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -88,6 +113,7 @@ export default function SignupPage() {
                 required
                 minLength={6}
                 placeholder="6자 이상"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -101,6 +127,7 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 placeholder="비밀번호 확인"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
