@@ -8,16 +8,25 @@ import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/lib/supabase';
 import { submitReservation } from '@/lib/submitReservation';
-import { Package, Info, Users, Calendar, Phone, Mail } from 'lucide-react';
+import { Package, Info, Users, Calendar } from 'lucide-react';
+
+interface PackagePriceConfigEntry {
+  per_person?: number;
+}
 
 interface PackageMaster {
   id: string;
-  package_name: string;
-  description: string;
-  base_price: number;
-  min_guests: number;
-  max_guests: number;
-  is_active: boolean;
+  package_code: string;
+  name: string;
+  description: string | null;
+  base_price: number | null;
+  is_active: boolean | null;
+  price_config?: Record<string, number | PackagePriceConfigEntry> | null;
+  price_child_extra_bed?: number | null;
+  price_child_no_extra_bed?: number | null;
+  price_infant_tour?: number | null;
+  price_infant_extra_bed?: number | null;
+  price_infant_seat?: number | null;
 }
 
 export default function PackageBookingPage() {
@@ -75,20 +84,22 @@ export default function PackageBookingPage() {
           .from('package_master')
           .select('*')
           .eq('is_active', true)
-          .order('package_name');
+          .order('name');
 
         if (pkgData) {
           // 엠바사더 패키지 제외
-          const filtered = pkgData.filter(
+          const filtered = (pkgData as PackageMaster[]).filter(
             (p) =>
-              !p.package_name?.toLowerCase().includes('ambassador') &&
-              !p.package_name?.includes('엠바사더')
+              !p.name?.toLowerCase().includes('ambassador') &&
+              !p.name?.includes('엠바사더') &&
+              !p.package_code?.toLowerCase().includes('ambassador')
           );
           setPackages(filtered);
 
-          // 기본값 선택
+          // 고객 프로젝트와 동일하게 그랜드 파이어니스 기본 선택
           if (filtered.length > 0) {
-            setSelectedPkgId(filtered[0].id);
+            const defaultPkg = filtered.find((p) => p.name.includes('그랜드 파이어니스')) || filtered[0];
+            setSelectedPkgId(defaultPkg.id);
           }
         }
       } finally {
@@ -100,8 +111,42 @@ export default function PackageBookingPage() {
   }, [user]);
 
   const selectedPackage = packages.find((p) => p.id === selectedPkgId);
+
+  const getAdultPrice = useCallback((pkg: PackageMaster | undefined, adultCount: number) => {
+    if (!pkg) return 0;
+
+    if (pkg.price_config && typeof pkg.price_config === 'object') {
+      const config = pkg.price_config[adultCount.toString()];
+      if (config) {
+        if (typeof config === 'object' && typeof config.per_person === 'number') {
+          return Number(config.per_person);
+        }
+        return Number(config);
+      }
+
+      const keys = Object.keys(pkg.price_config).map(Number).sort((a, b) => b - a);
+      const maxKey = keys[0];
+      if (maxKey && adultCount > maxKey) {
+        const maxConfig = pkg.price_config[maxKey.toString()];
+        if (typeof maxConfig === 'object' && typeof maxConfig.per_person === 'number') {
+          return Number(maxConfig.per_person);
+        }
+        return Number(maxConfig || 0);
+      }
+    }
+
+    return Number(pkg.base_price || 0);
+  }, []);
+
   const totalGuests = adults + totalChildren + totalInfants;
-  const totalPrice = (selectedPackage?.base_price ?? 0) * adults;
+  const adultUnitPrice = getAdultPrice(selectedPackage, adults);
+  const totalPrice =
+    adults * adultUnitPrice +
+    childExtraBed * Number(selectedPackage?.price_child_extra_bed || 6900000) +
+    childNoExtraBed * Number(selectedPackage?.price_child_no_extra_bed || 5850000) +
+    infantTour * Number(selectedPackage?.price_infant_tour || 900000) +
+    infantExtraBed * Number(selectedPackage?.price_infant_extra_bed || 4200000) +
+    infantSeat * Number(selectedPackage?.price_infant_seat || 800000);
 
   // 아동 옵션 토글
   const handleChildrenChange = useCallback((val: number) => {
@@ -147,7 +192,7 @@ export default function PackageBookingPage() {
     if (totalChildren > 0) {
       const selectedChildCount = childExtraBed + childNoExtraBed;
       if (selectedChildCount !== totalChildren) {
-        alert(`아동 ${totalChildren}명에 대한 옵션을 모두 선택해주세요.`);
+        alert(`아동 ${totalChildren}명에 대한 옵션을 모두 선택해주세요.\n현재 선택: ${selectedChildCount}명 (엑스트라베드 사용 ${childExtraBed}명 + 미사용 ${childNoExtraBed}명)`);
         return;
       }
     }
@@ -156,7 +201,7 @@ export default function PackageBookingPage() {
     if (totalInfants > 0) {
       const requiredInfantCount = infantFree + infantTour;
       if (requiredInfantCount !== totalInfants) {
-        alert(`유아 ${totalInfants}명에 대한 필수 옵션을 선택해주세요.`);
+        alert(`유아 ${totalInfants}명에 대한 필수 옵션을 선택해주세요.\n현재 선택: ${requiredInfantCount}명 (신장 미만 ${infantFree}명 + 신장 이상 ${infantTour}명)\n※ 엑스트라베드와 리무진 좌석은 선택사항입니다.`);
         return;
       }
     }
@@ -221,23 +266,21 @@ export default function PackageBookingPage() {
               >
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
-                    <h4 className="font-bold text-gray-900">{pkg.package_name}</h4>
+                    <span className="inline-block text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded mb-2">
+                      {pkg.package_code}
+                    </span>
+                    <h4 className="font-bold text-gray-900">{pkg.name}</h4>
                     {pkg.description && (
                       <p className="text-sm text-gray-500 mt-1">{pkg.description}</p>
                     )}
                   </div>
                   <div className="text-right whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{adults}인 기준</div>
+                    <div className="text-sm text-gray-500">{adults}인 기준 성인 단가</div>
                     <div className="text-lg font-bold text-blue-600">
-                      {pkg.base_price.toLocaleString()} VND
+                      {getAdultPrice(pkg, adults).toLocaleString()} VND
                     </div>
                   </div>
                 </div>
-                {pkg.min_guests > 0 && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    최소 {pkg.min_guests}명 ~ 최대 {pkg.max_guests}명
-                  </p>
-                )}
               </button>
             ))}
           </div>
@@ -348,7 +391,11 @@ export default function PackageBookingPage() {
                     checked={childOptions.extraBed}
                     onChange={(e) => {
                       setChildOptions({ ...childOptions, extraBed: e.target.checked });
-                      if (!e.target.checked) setChildExtraBed(0);
+                      if (!e.target.checked) {
+                        setChildExtraBed(0);
+                      } else if (childExtraBed === 0) {
+                        setChildExtraBed(1);
+                      }
                     }}
                     className="w-4 h-4 rounded"
                   />
@@ -375,7 +422,11 @@ export default function PackageBookingPage() {
                     checked={childOptions.noExtraBed}
                     onChange={(e) => {
                       setChildOptions({ ...childOptions, noExtraBed: e.target.checked });
-                      if (!e.target.checked) setChildNoExtraBed(0);
+                      if (!e.target.checked) {
+                        setChildNoExtraBed(0);
+                      } else if (childNoExtraBed === 0) {
+                        setChildNoExtraBed(1);
+                      }
                     }}
                     className="w-4 h-4 rounded"
                   />
@@ -427,7 +478,11 @@ export default function PackageBookingPage() {
                     checked={infantOptions.free}
                     onChange={(e) => {
                       setInfantOptions({ ...infantOptions, free: e.target.checked });
-                      if (!e.target.checked) setInfantFree(0);
+                      if (!e.target.checked) {
+                        setInfantFree(0);
+                      } else if (infantFree === 0) {
+                        setInfantFree(1);
+                      }
                     }}
                     className="w-4 h-4 rounded"
                   />
@@ -453,7 +508,11 @@ export default function PackageBookingPage() {
                     checked={infantOptions.tour}
                     onChange={(e) => {
                       setInfantOptions({ ...infantOptions, tour: e.target.checked });
-                      if (!e.target.checked) setInfantTour(0);
+                      if (!e.target.checked) {
+                        setInfantTour(0);
+                      } else if (infantTour === 0) {
+                        setInfantTour(1);
+                      }
                     }}
                     className="w-4 h-4 rounded"
                   />
@@ -483,7 +542,11 @@ export default function PackageBookingPage() {
                     checked={infantOptions.extraBed}
                     onChange={(e) => {
                       setInfantOptions({ ...infantOptions, extraBed: e.target.checked });
-                      if (!e.target.checked) setInfantExtraBed(0);
+                      if (!e.target.checked) {
+                        setInfantExtraBed(0);
+                      } else if (infantExtraBed === 0) {
+                        setInfantExtraBed(1);
+                      }
                     }}
                     className="w-4 h-4 rounded"
                   />
@@ -495,10 +558,10 @@ export default function PackageBookingPage() {
                 {infantOptions.extraBed && (
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     max={totalInfants}
                     value={infantExtraBed}
-                    onChange={(e) => setInfantExtraBed(Math.max(0, parseInt(e.target.value) || 0))}
+                    onChange={(e) => setInfantExtraBed(Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-full px-2 py-1 border border-blue-300 rounded text-sm"
                   />
                 )}
@@ -509,7 +572,11 @@ export default function PackageBookingPage() {
                     checked={infantOptions.seat}
                     onChange={(e) => {
                       setInfantOptions({ ...infantOptions, seat: e.target.checked });
-                      if (!e.target.checked) setInfantSeat(0);
+                      if (!e.target.checked) {
+                        setInfantSeat(0);
+                      } else if (infantSeat === 0) {
+                        setInfantSeat(1);
+                      }
                     }}
                     className="w-4 h-4 rounded"
                   />
@@ -521,10 +588,10 @@ export default function PackageBookingPage() {
                 {infantOptions.seat && (
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     max={totalInfants}
                     value={infantSeat}
-                    onChange={(e) => setInfantSeat(Math.max(0, parseInt(e.target.value) || 0))}
+                    onChange={(e) => setInfantSeat(Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-full px-2 py-1 border border-blue-300 rounded text-sm"
                   />
                 )}
@@ -552,17 +619,22 @@ export default function PackageBookingPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-700 font-medium">패키지:</span>
-            <span className="text-gray-900 font-semibold">{selectedPackage.package_name}</span>
+            <span className="text-gray-900 font-semibold">{selectedPackage.name}</span>
           </div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-700 font-medium">단가:</span>
+            <span className="text-gray-700 font-medium">성인 단가:</span>
             <span className="text-blue-600 font-semibold">
-              {selectedPackage.base_price.toLocaleString()} VND
+              {adultUnitPrice.toLocaleString()} VND
             </span>
+          </div>
+          <div className="text-xs text-gray-600 mb-2 space-y-1">
+            <p>아동(엑스트라베드): {childExtraBed}명</p>
+            <p>아동(베드미사용): {childNoExtraBed}명</p>
+            <p>유아(투어): {infantTour}명 / 유아(엑스트라베드): {infantExtraBed}명 / 유아(좌석): {infantSeat}명</p>
           </div>
           <div className="flex justify-between items-center border-t border-blue-200 pt-2">
             <span className="text-gray-900 font-bold text-lg">
-              총 인원({adults}인) 예상 금액:
+              총 예상 금액:
             </span>
             <span className="text-blue-600 font-bold text-xl">
               {totalPrice.toLocaleString()} VND
