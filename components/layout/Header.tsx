@@ -6,12 +6,13 @@ import { useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
 import { clearAuthCache } from '@/hooks/useAuth';
 import { queryClient } from '@/lib/queryClient';
-import { Ship, Menu, X, LogOut, Home, Plus, ClipboardList } from 'lucide-react';
+import { Ship, Menu, X, LogOut, Home, Plus, ClipboardList, User } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/mypage', label: '홈', icon: Home },
   { href: '/mypage/direct-booking', label: '예약하기', icon: Plus },
   { href: '/mypage/reservations/list', label: '예약 내역', icon: ClipboardList },
+  { href: '/mypage/profile', label: '내 정보', icon: User },
 ];
 
 export default function Header() {
