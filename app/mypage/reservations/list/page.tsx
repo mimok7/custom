@@ -42,8 +42,30 @@ export default function ReservationListPage() {
   } = useReservations((user?.id as string) ?? '');
   const { data: additionalData } = useReservationAdditionalData(reservations ?? []);
 
-  const filtered = (reservations ?? []).sort((a, b) => {
-    return new Date(b.re_created_at).getTime() - new Date(a.re_created_at).getTime();
+  const TYPE_ORDER: Record<string, number> = {
+    cruise: 0, airport: 1, tour: 2, rentcar: 3, hotel: 4, package: 5, ticket: 6, car: 7, sht_car: 8, sht: 8,
+  };
+
+  const allReservations = reservations ?? [];
+  const quotesById = additionalData?.quotesById ?? {};
+
+  // 견적별 그룹핑
+  const groups: Array<{ quoteId: string | null; items: typeof allReservations }> = [];
+  const groupMap = new Map<string, typeof allReservations>();
+  allReservations.forEach(r => {
+    const key = r.re_quote_id ?? '__none__';
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key)!.push(r);
+  });
+  // 각 그룹을 타입 순서로 정렬, 그룹은 첫 번째 예약의 생성일 기준 최신순
+  groupMap.forEach((items, key) => {
+    items.sort((a, b) => (TYPE_ORDER[a.re_type] ?? 99) - (TYPE_ORDER[b.re_type] ?? 99));
+    groups.push({ quoteId: key === '__none__' ? null : key, items });
+  });
+  groups.sort((a, b) => {
+    const ta = a.items[0]?.re_created_at ? new Date(a.items[0].re_created_at).getTime() : 0;
+    const tb = b.items[0]?.re_created_at ? new Date(b.items[0].re_created_at).getTime() : 0;
+    return tb - ta;
   });
 
   if (authLoading || isLoading) return <Spinner className="h-72" />;
@@ -71,42 +93,58 @@ export default function ReservationListPage() {
 
   return (
     <PageWrapper title="예약 내역" description="예약 목록을 확인하세요">
-      {filtered.length === 0 ? (
+      {allReservations.length === 0 ? (
         <EmptyState message="예약 내역이 없습니다" />
       ) : (
-        <div className="space-y-3">
-          {filtered.map((r) => {
-            const meta = SERVICE_META[r.re_type] ?? SERVICE_META.cruise;
-            const status = STATUS_BADGE[r.re_status] ?? STATUS_BADGE.pending;
-            const Icon = meta.icon;
-            const cruiseMeta = additionalData?.cruiseMeta?.[r.re_id];
-            const amount = additionalData?.amountsByReservation?.[r.re_id];
-
+        <div className="space-y-6">
+          {groups.map(({ quoteId, items }) => {
+            const quote = quoteId ? quotesById[quoteId] : null;
             return (
-              <button key={r.re_id}
-                className="card w-full text-left flex items-center gap-4 hover:shadow-md transition-shadow"
-                onClick={() => router.push(`/mypage/reservations/${r.re_id}/view`)}>
-                <div className={`p-2.5 rounded-lg ${meta.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{meta.label}</span>
-                    <span className={`badge ${status.bg}`}>{status.label}</span>
+              <div key={quoteId ?? 'none'} className="space-y-2">
+                {quote && (
+                  <div className="text-xs font-semibold text-gray-500 px-1 pb-1 border-b border-gray-100">
+                    📋 {quote.title}
                   </div>
-                  <div className="text-sm text-gray-500 mt-0.5 truncate">
-                    {cruiseMeta?.checkin
-                      ? `${new Date(cruiseMeta.checkin).toLocaleDateString('ko-KR')} · 성인${cruiseMeta.adult_count ?? 0}`
-                      : formatKst(r.re_created_at)}
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  {amount ? (
-                    <span className="text-sm font-semibold text-gray-700">{amount.toLocaleString()} VND</span>
-                  ) : null}
-                  <Eye className="w-4 h-4 text-gray-400 mt-1 ml-auto" />
-                </div>
-              </button>
+                )}
+                {items.map((r) => {
+                  const meta = SERVICE_META[r.re_type] ?? SERVICE_META.cruise;
+                  const status = STATUS_BADGE[r.re_status] ?? STATUS_BADGE.pending;
+                  const Icon = meta.icon;
+                  const cruiseMeta = additionalData?.cruiseMeta?.[r.re_id];
+                  const amount = additionalData?.amountsByReservation?.[r.re_id];
+                  const payment = additionalData?.paymentStatusByReservation?.[r.re_id];
+
+                  return (
+                    <button key={r.re_id}
+                      className="card w-full text-left flex items-center gap-4 hover:shadow-md transition-shadow"
+                      onClick={() => router.push(`/mypage/reservations/${r.re_id}/view`)}>
+                      <div className={`p-2.5 rounded-lg ${meta.color}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-gray-900">{meta.label}</span>
+                          <span className={`badge ${status.bg}`}>{status.label}</span>
+                          {payment?.hasCompleted && (
+                            <span className="badge bg-emerald-50 text-emerald-700">💳 결제완료</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500 mt-0.5 truncate">
+                          {cruiseMeta?.checkin
+                            ? `${new Date(String(cruiseMeta.checkin)).toLocaleDateString('ko-KR')} · 성인${cruiseMeta.adult_count ?? 0}`
+                            : formatKst(r.re_created_at)}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        {amount ? (
+                          <span className="text-sm font-semibold text-gray-700">{amount.toLocaleString()} VND</span>
+                        ) : null}
+                        <Eye className="w-4 h-4 text-gray-400 mt-1 ml-auto" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
