@@ -49,8 +49,22 @@ export default function SignupPage() {
         return;
       }
 
-      alert('신규 예약 등록이 완료되었습니다. 로그인해주세요.');
-      router.replace('/login');
+      // users 테이블에 이름 저장
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        await supabase.from('users').upsert(
+          {
+            id: authData.user.id,
+            email: email.trim(),
+            name: name.trim(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
+
+        alert('신규 예약 등록이 완료되었습니다. 로그인해주세요.');
+        router.replace('/login');
+      }
     } catch {
       setError('신규 예약 등록 중 오류가 발생했습니다.');
     } finally {
