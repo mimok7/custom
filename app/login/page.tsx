@@ -105,7 +105,7 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm text-gray-500">
             계정이 없으신가요?{' '}
-            <Link href="/signup" className="text-blue-600 hover:underline">
+            <Link href="/signup" className="text-blue-700 underline underline-offset-2 hover:text-blue-800">
               신규 예약
             </Link>
           </p>
