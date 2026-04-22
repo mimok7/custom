@@ -10,7 +10,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +32,6 @@ export default function SignupPage() {
       const { error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { name: name.trim() } },
       });
 
       if (authError) {
@@ -60,21 +58,11 @@ export default function SignupPage() {
           <p className="text-center text-gray-500 text-sm mb-8">
             스테이 하롱 트레블
           </p>
+          <p className="text-center text-xs text-gray-500 mb-6">
+            이름은 가입 후 내정보에서 수정할 수 있습니다.
+          </p>
 
           <form onSubmit={handleSignup} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                이름
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="이름"
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 이메일
