@@ -70,17 +70,46 @@ export async function getSessionUser(
   if (!sessionUserPromise) {
     sessionUserPromise = (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await withTimeout(
+          supabase.auth.getSession(),
+          timeoutMs,
+          `Auth session check timed out (${timeoutMs}ms)`,
+        );
+
+        if (sessionError) {
+          const fallbackUser = getStoredSessionUser();
+          if (fallbackUser) {
+            return { user: fallbackUser, error: null };
+          }
+          return { user: null, error: sessionError };
+        }
+
         if (session?.user) {
           return { user: session.user as Record<string, unknown>, error: null };
         }
 
-        const userResult = await supabase.auth.getUser();
+        const userResult = await withTimeout(
+          supabase.auth.getUser(),
+          timeoutMs,
+          `Auth user check timed out (${timeoutMs}ms)`,
+        );
+
+        if (userResult.error) {
+          const fallbackUser = getStoredSessionUser();
+          if (fallbackUser) {
+            return { user: fallbackUser, error: null };
+          }
+        }
+
         return {
           user: userResult.data.user as Record<string, unknown> | null,
           error: userResult.error,
         };
       } catch (err) {
+        const fallbackUser = getStoredSessionUser();
+        if (fallbackUser) {
+          return { user: fallbackUser, error: null };
+        }
         return { user: null, error: err };
       } finally {
         sessionUserPromise = null;
