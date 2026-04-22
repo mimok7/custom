@@ -387,7 +387,9 @@ export async function submitReservation(
     return { reservationId: null, error: message };
   }
 
-  const { id, quoteId, error: createErr } = await createReservation(String(user.id), serviceType);
+  // reservation.re_type 스키마에 맞춰 저장 타입 정규화
+  const normalizedType = serviceType === 'ticket' ? 'tour' : serviceType;
+  const { id, quoteId, error: createErr } = await createReservation(String(user.id), normalizedType);
   if (createErr || !id) return { reservationId: null, error: createErr ?? '예약 생성 실패' };
 
   const payloadWithUser = {

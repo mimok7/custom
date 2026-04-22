@@ -22,7 +22,6 @@ interface TourPricing {
   min_guests: number;
   max_guests: number;
   price_per_person: number;
-  payment_currency: string;
 }
 
 function hasKorean(text: string): boolean {
@@ -70,7 +69,7 @@ export default function TourBookingPage() {
     if (!selectedTourId) { setPricingData([]); return; }
     supabase
       .from('tour_pricing')
-      .select('pricing_id, tour_id, min_guests, max_guests, price_per_person, payment_currency')
+      .select('pricing_id, tour_id, min_guests, max_guests, price_per_person')
       .eq('tour_id', selectedTourId)
       .order('min_guests')
       .then(({ data }) => {
@@ -133,15 +132,15 @@ export default function TourBookingPage() {
       <SectionBox title="투어 선택">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">투어</label>
-            <select value={selectedTourId} onChange={(e) => setSelectedTourId(e.target.value)}>
+            <label htmlFor="tour-id" className="block text-sm font-medium text-gray-700 mb-1">투어</label>
+            <select id="tour-id" value={selectedTourId} onChange={(e) => setSelectedTourId(e.target.value)}>
               <option value="">선택</option>
               {tours.map((t) => <option key={t.tour_id} value={t.tour_id}>{t.tour_name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">인원</label>
-            <input type="number" min={1} value={guestCount || ''} onChange={(e) => setGuestCount(e.target.value === '' ? 0 : Number(e.target.value))} />
+            <label htmlFor="tour-guest-count" className="block text-sm font-medium text-gray-700 mb-1">인원</label>
+            <input id="tour-guest-count" type="number" min={1} value={guestCount || ''} onChange={(e) => setGuestCount(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
         </div>
       </SectionBox>
@@ -149,8 +148,8 @@ export default function TourBookingPage() {
       <SectionBox title="일정">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">투어 날짜</label>
-            <input type="date" value={tourDate} onChange={(e) => setTourDate(e.target.value)} />
+            <label htmlFor="tour-date" className="block text-sm font-medium text-gray-700 mb-1">투어 날짜</label>
+            <input id="tour-date" type="date" value={tourDate} onChange={(e) => setTourDate(e.target.value)} />
           </div>
         </div>
       </SectionBox>
@@ -172,20 +171,20 @@ export default function TourBookingPage() {
       <SectionBox title="투어 옵션">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">점심 식사</label>
-            <select value={lunchOption} onChange={(e) => setLunchOption(e.target.value)}>
+            <label htmlFor="tour-lunch-option" className="block text-sm font-medium text-gray-700 mb-1">점심 식사</label>
+            <select id="tour-lunch-option" value={lunchOption} onChange={(e) => setLunchOption(e.target.value)}>
               {LUNCH_OPTIONS.map((o) => <option key={o}>{o}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">투어 코스</label>
-            <select value={tourCourse} onChange={(e) => setTourCourse(e.target.value)}>
+            <label htmlFor="tour-course" className="block text-sm font-medium text-gray-700 mb-1">투어 코스</label>
+            <select id="tour-course" value={tourCourse} onChange={(e) => setTourCourse(e.target.value)}>
               {TOUR_COURSES.map((o) => <option key={o}>{o}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">야간 투어</label>
-            <select value={nightTour} onChange={(e) => setNightTour(e.target.value)}>
+            <label htmlFor="tour-night-option" className="block text-sm font-medium text-gray-700 mb-1">야간 투어</label>
+            <select id="tour-night-option" value={nightTour} onChange={(e) => setNightTour(e.target.value)}>
               {NIGHT_TOUR_OPTIONS.map((o) => <option key={o}>{o}</option>)}
             </select>
           </div>
