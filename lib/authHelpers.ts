@@ -9,6 +9,57 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: 
   ]);
 }
 
+function extractUserFromStoredValue(raw: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(raw);
+    const candidates = [
+      parsed,
+      parsed?.currentSession,
+      parsed?.session,
+      parsed?.data?.session,
+      parsed?.value?.session,
+      parsed?.value,
+    ];
+
+    for (const candidate of candidates) {
+      const user = candidate?.user;
+      if (user?.id) return user as Record<string, unknown>;
+    }
+  } catch {
+    // ignore malformed storage
+  }
+
+  return null;
+}
+
+function getStoredSessionUser(): Record<string, unknown> | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const authCache = sessionStorage.getItem('app:auth:cache');
+    if (authCache) {
+      const parsed = JSON.parse(authCache);
+      if (parsed?.user?.id) return parsed.user as Record<string, unknown>;
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (!key.startsWith('sb-') || !key.endsWith('-auth-token')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const user = extractUserFromStoredValue(raw);
+      if (user?.id) return user;
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
 let sessionUserPromise: Promise<{ user: Record<string, unknown> | null; error: unknown }> | null = null;
 let refreshSessionPromise: Promise<{ user: Record<string, unknown> | null; error?: unknown }> | null = null;
 
@@ -37,11 +88,19 @@ export async function getSessionUser(
     })();
   }
 
-  return withTimeout(
-    sessionUserPromise,
-    timeoutMs,
-    `Auth session check timed out (${timeoutMs}ms)`,
-  );
+  try {
+    return await withTimeout(
+      sessionUserPromise,
+      timeoutMs,
+      `Auth session check timed out (${timeoutMs}ms)`,
+    );
+  } catch (err) {
+    const fallbackUser = getStoredSessionUser();
+    if (fallbackUser) {
+      return { user: fallbackUser, error: null };
+    }
+    return { user: null, error: err };
+  }
 }
 
 /** 토큰 만료 임박 시 세션 갱신 (제출 직전 호출) */
