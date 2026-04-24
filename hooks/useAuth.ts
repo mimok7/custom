@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
-import { isInvalidRefreshTokenError, clearInvalidSession, getSessionUser } from '@/lib/authHelpers';
-import { queryClient } from '@/lib/queryClient';
-import { showToast } from '@/lib/toast';
 
 interface AuthState {
   user: Record<string, unknown> | null;
@@ -12,57 +9,64 @@ interface AuthState {
   error: Error | null;
 }
 
-// 인메모리 + sessionStorage 이중 캐시
-let authCache: {
-  user: Record<string, unknown> | null;
-  role: string | null;
-  timestamp: number;
-} | null = null;
-
-const CACHE_DURATION = 30 * 60 * 1000; // 30분
+// 인메모리 + sessionStorage 백업 캐시 (새로고침/탭 복귀 시 깜빡임 방지)
 const AUTH_CACHE_KEY = 'app:auth:cache';
+let authCache: { user: Record<string, unknown> | null; role: string | null; timestamp: number } | null = null;
 
-function restoreCache() {
-  if (authCache) return;
+function readSessionCache(): { user: Record<string, unknown> | null; role: string | null } | null {
+  if (authCache?.user) return { user: authCache.user, role: authCache.role };
+  if (typeof window === 'undefined') return null;
   try {
-    const stored = sessionStorage.getItem(AUTH_CACHE_KEY);
-    if (!stored) return;
-    const parsed = JSON.parse(stored);
-    if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+    const raw = sessionStorage.getItem(AUTH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.user) {
       authCache = parsed;
+      return { user: parsed.user, role: parsed.role ?? null };
+    }
+  } catch {
+    /* SSR 안전 */
+  }
+  return null;
+}
+
+function writeSessionCache(user: Record<string, unknown> | null, role: string | null = null) {
+  authCache = { user, role, timestamp: Date.now() };
+  if (typeof window === 'undefined') return;
+  try {
+    if (user) {
+      sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(authCache));
     } else {
       sessionStorage.removeItem(AUTH_CACHE_KEY);
     }
   } catch {
-    /* SSR safe */
+    /* SSR 안전 */
   }
 }
 
-function persistCache() {
-  if (!authCache) return;
-  try {
-    sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(authCache));
-  } catch {
-    /* SSR safe */
-  }
+export function primeAuthCache(user: Record<string, unknown> | null, role: string | null = 'guest') {
+  writeSessionCache(user, role);
 }
 
-export function primeAuthCache(
-  user: Record<string, unknown> | null,
-  role: string | null = 'guest',
-) {
-  authCache = {
-    user,
-    role,
-    timestamp: Date.now(),
-  };
-  persistCache();
+export function clearAuthCache() {
+  authCache = null;
+  if (typeof window === 'undefined') return;
+  try { sessionStorage.removeItem(AUTH_CACHE_KEY); } catch { /* SSR 안전 */ }
 }
 
 /**
- * 인증 및 권한 확인 훅
- * @param requiredRoles 필요 역할 배열 (예: ['member', 'manager'])
+ * 인증/권한 확인 훅 (단순화 버전).
+ *
+ * 핵심 원칙(인증/세션 최소화):
+ *  1) supabase.auth.getSession()은 로컬 캐시만 읽음 → 네트워크 호출 없음
+ *  2) onAuthStateChange 리스너로 토큰 갱신/로그아웃 변경을 자동 반영
+ *  3) 탭 전환/포커스/온라인 이벤트 별도 재확인 없음 (Supabase autoRefreshToken이 처리)
+ *  4) 일시적 오류로 자동 로그아웃 시키지 않음 (캐시된 사용자 유지)
+ *  5) watchdog 타임아웃 없음 → 잘못된 false negative 제거
+ *
+ * @param requiredRoles 필요 역할 배열 (지정 시 역할 미충족이면 redirectOnFail로 이동)
  * @param redirectOnFail 권한 없을 시 리다이렉트 경로
+ * @param loginRequired 로그인 필수 여부 (true면 미로그인 시 /login 이동)
  */
 export function useAuth(
   requiredRoles?: string[],
@@ -70,290 +74,138 @@ export function useAuth(
   loginRequired = false,
 ) {
   const router = useRouter();
+  const cached = typeof window !== 'undefined' ? readSessionCache() : null;
   const [state, setState] = useState<AuthState>({
-    user: null,
-    role: null,
-    loading: true,
+    user: cached?.user ?? null,
+    role: cached?.role ?? null,
+    loading: !cached, // 캐시가 있으면 즉시 사용 → 로딩 깜빡임 방지
     error: null,
   });
 
   useEffect(() => {
     let cancelled = false;
-    let checking = false;
 
-    // 워치독 타이머: 12초 후에도 로딩 중이면 강제 해제 (무한 로딩 방지)
-    const watchdogId = setTimeout(() => {
-      if (cancelled) return;
-      setState((prev) => {
-        if (!prev.loading) return prev;
-        showToast({
-          message: '인증 확인 시간이 초과되었습니다. 페이지를 새로고침해 주세요.',
-          type: 'warning',
-          duration: 0,
-          onRetry: () => window.location.reload(),
-        });
-        return { ...prev, loading: false, error: new Error('AUTH_LOADING_TIMEOUT') };
-      });
-    }, 12000);
-
-    const check = async ({ forceRefresh = false, silent = false }: { forceRefresh?: boolean; silent?: boolean } = {}) => {
-      if (checking) return;
-      checking = true;
-
-      if (forceRefresh) {
-        authCache = null;
-        try {
-          sessionStorage.removeItem(AUTH_CACHE_KEY);
-        } catch {
-          /* SSR safe */
-        }
-        if (!cancelled && !silent) {
-          setState((prev) => ({ ...prev, loading: true }));
-        }
-      }
-
+    const fetchRole = async (userId: string): Promise<string> => {
       try {
-        restoreCache();
-
-        const now = Date.now();
-        if (authCache && now - authCache.timestamp < CACHE_DURATION) {
-          if (!cancelled) {
-            setState({
-              user: authCache.user,
-              role: authCache.role,
-              loading: false,
-              error: null,
-            });
-          }
-          if (
-            requiredRoles &&
-            authCache.role &&
-            !requiredRoles.includes(authCache.role)
-          ) {
-            if (!cancelled) {
-              setState({ user: null, role: null, loading: false, error: null });
-            }
-            router.replace(redirectOnFail);
-          }
-          return;
-        }
-
-        const { user, error: userError } = await getSessionUser(12000);
-        if (cancelled) return;
-
-        if (userError || !user) {
-          if (userError && isInvalidRefreshTokenError(userError)) {
-            await clearInvalidSession();
-          }
-          setState({ user: null, role: null, loading: false, error: userError as Error | null });
-          if (requiredRoles?.length || loginRequired) router.replace('/login');
-          return;
-        }
-
-        const { data: userData, error: roleError } = await supabase
+        const { data } = await supabase
           .from('users')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', userId)
           .maybeSingle();
-        if (cancelled) return;
+        return ((data?.role as string) || 'guest');
+      } catch {
+        return 'guest';
+      }
+    };
 
-        let userRole = 'guest';
-        if (!roleError && userData?.role) {
-          userRole = userData.role as string;
-        }
+    const applyAuth = async (user: Record<string, unknown> | null) => {
+      if (cancelled) return;
 
-        authCache = { user: user as unknown as Record<string, unknown>, role: userRole, timestamp: now };
-        persistCache();
-
-        if (!cancelled) {
-          setState({ user: user as unknown as Record<string, unknown>, role: userRole, loading: false, error: null });
-        }
-
-        if (requiredRoles && !requiredRoles.includes(userRole)) {
-          if (!cancelled) {
-            setState({ user: null, role: null, loading: false, error: null });
+      if (!user) {
+        if (!cached) {
+          // 캐시도 없고 세션도 없을 때만 로그인 페이지로 이동
+          writeSessionCache(null);
+          setState({ user: null, role: null, loading: false, error: null });
+          if (loginRequired || requiredRoles?.length) {
+            router.replace(redirectOnFail);
           }
-          alert('접근 권한이 없습니다.');
-          router.replace(redirectOnFail);
-          return;
+        } else {
+          // 캐시는 있는데 세션이 잠시 없는 경우 → 캐시 유지 (강제 로그아웃 금지)
+          setState((prev) => ({ ...prev, loading: false }));
         }
-      } catch (error) {
-        if (isInvalidRefreshTokenError(error)) {
-          await clearInvalidSession();
-        }
-        if (!cancelled) {
-          setState({
-            user: null,
-            role: null,
-            loading: false,
-            error: error as Error,
-          });
-        }
-        if (requiredRoles?.length || loginRequired) router.replace('/login');
-      } finally {
-        checking = false;
+        return;
       }
-    };
 
-    void check();
-
-    const handleOnline = () => {
-      void check({ forceRefresh: true, silent: true });
-    };
-
-    // 탭 전환 시 로딩 스피너 없이 백그라운드 세션 확인
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void check({ forceRefresh: false, silent: true });
+      // 사용자 있음 → 역할 조회 (요구된 경우에만)
+      let role: string | null = cached?.role ?? null;
+      if (requiredRoles?.length || !role) {
+        role = await fetchRole(user.id as string);
       }
+      if (cancelled) return;
+
+      writeSessionCache(user, role);
+
+      // 권한 검사
+      if (requiredRoles?.length && role && !requiredRoles.includes(role)) {
+        setState({ user: null, role: null, loading: false, error: null });
+        router.replace(redirectOnFail);
+        return;
+      }
+
+      setState({ user, role, loading: false, error: null });
     };
 
-    window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const checkOnce = async () => {
       try {
-        if (event === 'SIGNED_OUT') {
-          authCache = null;
-          try {
-            sessionStorage.removeItem(AUTH_CACHE_KEY);
-          } catch {
-            /* SSR safe */
-          }
-          queryClient.clear();
-          if (!cancelled) {
-            setState({ user: null, role: null, loading: false, error: null });
-          }
-          return;
+        const { data: { session } } = await supabase.auth.getSession();
+        await applyAuth((session?.user ?? null) as Record<string, unknown> | null);
+      } catch (err) {
+        if (cancelled) return;
+        // 오류 발생 시 캐시된 사용자 유지 (강제 로그아웃 금지)
+        setState((prev) => ({ ...prev, loading: false, error: err as Error }));
+      }
+    };
+
+    checkOnce();
+
+    // Supabase auth 상태 변경 리스너 - 토큰 갱신/로그아웃 자동 반영
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === 'SIGNED_OUT') {
+        writeSessionCache(null);
+        setState({ user: null, role: null, loading: false, error: null });
+        if (loginRequired || requiredRoles?.length) {
+          router.replace(redirectOnFail);
         }
-
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
-          // TOKEN_REFRESHED: 백그라운드 자동 갱신 → queryClient 삭제 불필요, 캐시만 업데이트
-          if (event === 'TOKEN_REFRESHED') {
-            if (authCache) {
-              authCache = {
-                ...authCache,
-                user: session.user as unknown as Record<string, unknown>,
-                timestamp: Date.now(),
-              };
-              persistCache();
-            }
-            // 이미 로그인된 상태이므로 state 변경 불필요
-            return;
-          }
-
-          // SIGNED_IN / USER_UPDATED: 캐시 초기화 및 역할 재조회
-          authCache = null;
-          try {
-            sessionStorage.removeItem(AUTH_CACHE_KEY);
-          } catch {
-            /* SSR safe */
-          }
-          queryClient.clear();
-
-          const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          const userRole = (userData?.role as string) || 'guest';
-          authCache = {
-            user: session.user as unknown as Record<string, unknown>,
-            role: userRole,
-            timestamp: Date.now(),
-          };
-          persistCache();
-
-          if (!cancelled) {
-            setState({
-              user: session.user as unknown as Record<string, unknown>,
-              role: userRole,
-              loading: false,
-              error: null,
-            });
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
+        return;
+      }
+      if (session?.user) {
+        // TOKEN_REFRESHED: 사용자 정보만 갱신, 역할은 기존 값 유지
+        if (event === 'TOKEN_REFRESHED') {
+          writeSessionCache(session.user as Record<string, unknown>, authCache?.role ?? null);
           setState((prev) => ({
             ...prev,
+            user: session.user as Record<string, unknown>,
             loading: false,
-            error: error as Error,
           }));
+          return;
         }
+        // SIGNED_IN / USER_UPDATED: 역할 재조회
+        void applyAuth(session.user as Record<string, unknown>);
       }
     });
 
     return () => {
       cancelled = true;
-      clearTimeout(watchdogId);
-      window.removeEventListener('online', handleOnline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      subscription.unsubscribe();
+      try { subscription?.unsubscribe?.(); } catch { /* noop */ }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const refetch = async () => {
-    authCache = null;
     try {
-      sessionStorage.removeItem(AUTH_CACHE_KEY);
-    } catch {
-      /* SSR safe */
-    }
-    setState((prev) => ({ ...prev, loading: true }));
-
-    try {
-      const { user, error: userError } = await getSessionUser(12000);
-      if (userError || !user) {
-        if (userError && isInvalidRefreshTokenError(userError)) {
-          await clearInvalidSession();
-        }
-        setState({ user: null, role: null, loading: false, error: userError as Error | null });
-        return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        const role = ((userData?.role as string) || 'guest');
+        writeSessionCache(session.user as Record<string, unknown>, role);
+        setState({ user: session.user as Record<string, unknown>, role, loading: false, error: null });
+      } else {
+        writeSessionCache(null);
+        setState({ user: null, role: null, loading: false, error: null });
       }
-
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      const userRole = (userData?.role as string) || 'guest';
-      authCache = { user: user as unknown as Record<string, unknown>, role: userRole, timestamp: Date.now() };
-      persistCache();
-      setState({ user: user as unknown as Record<string, unknown>, role: userRole, loading: false, error: null });
-    } catch (error) {
-      if (isInvalidRefreshTokenError(error)) {
-        await clearInvalidSession();
-      }
-      setState({
-        user: null,
-        role: null,
-        loading: false,
-        error: error as Error,
-      });
+    } catch (err) {
+      setState((prev) => ({ ...prev, loading: false, error: err as Error }));
     }
   };
 
   return {
     ...state,
     isAuthenticated: !!state.user,
-    isManager: state.role === 'manager' || state.role === 'admin',
-    isAdmin: state.role === 'admin',
-    isMember: state.role === 'member',
-    isGuest: state.role === 'guest',
     refetch,
   };
-}
-
-export function clearAuthCache() {
-  authCache = null;
-  try {
-    sessionStorage.removeItem(AUTH_CACHE_KEY);
-  } catch {
-    /* SSR safe */
-  }
 }

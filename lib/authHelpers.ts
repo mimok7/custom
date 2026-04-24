@@ -1,14 +1,5 @@
 import supabase from './supabase';
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
-  return Promise.race<T>([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
-    }),
-  ]);
-}
-
 function extractUserFromStoredValue(raw: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(raw);
@@ -20,7 +11,6 @@ function extractUserFromStoredValue(raw: string): Record<string, unknown> | null
       parsed?.value?.session,
       parsed?.value,
     ];
-
     for (const candidate of candidates) {
       const user = candidate?.user;
       if (user?.id) return user as Record<string, unknown>;
@@ -28,13 +18,11 @@ function extractUserFromStoredValue(raw: string): Record<string, unknown> | null
   } catch {
     // ignore malformed storage
   }
-
   return null;
 }
 
 function getStoredSessionUser(): Record<string, unknown> | null {
   if (typeof window === 'undefined') return null;
-
   try {
     const authCache = sessionStorage.getItem('app:auth:cache');
     if (authCache) {
@@ -44,7 +32,6 @@ function getStoredSessionUser(): Record<string, unknown> | null {
   } catch {
     // ignore
   }
-
   try {
     for (const key of Object.keys(localStorage)) {
       if (!key.startsWith('sb-') || !key.endsWith('-auth-token')) continue;
@@ -56,122 +43,55 @@ function getStoredSessionUser(): Record<string, unknown> | null {
   } catch {
     // ignore
   }
-
   return null;
 }
 
-let sessionUserPromise: Promise<{ user: Record<string, unknown> | null; error: unknown }> | null = null;
-let refreshSessionPromise: Promise<{ user: Record<string, unknown> | null; error?: unknown }> | null = null;
-
-/** 로컬 세션에서 사용자 조회 (네트워크 타임아웃 10초) */
+/**
+ * 현재 로그인된 사용자 조회.
+ *
+ * 핵심:
+ *  - supabase.auth.getSession()은 로컬 캐시만 읽음 → 네트워크/타임아웃 불필요
+ *  - 실패 시 sessionStorage / localStorage 백업에서 복구 시도
+ *  - timeoutMs 인자는 하위 호환을 위해 유지하지만 실제 사용하지 않음
+ */
 export async function getSessionUser(
-  timeoutMs = 10000,
+  _timeoutMs?: number,
 ): Promise<{ user: Record<string, unknown> | null; error: unknown }> {
-  if (!sessionUserPromise) {
-    sessionUserPromise = (async () => {
-      try {
-        const { data: { session }, error: sessionError } = await withTimeout(
-          supabase.auth.getSession(),
-          timeoutMs,
-          `Auth session check timed out (${timeoutMs}ms)`,
-        );
-
-        if (sessionError) {
-          const fallbackUser = getStoredSessionUser();
-          if (fallbackUser) {
-            return { user: fallbackUser, error: null };
-          }
-          return { user: null, error: sessionError };
-        }
-
-        if (session?.user) {
-          return { user: session.user as Record<string, unknown>, error: null };
-        }
-
-        const userResult = await withTimeout(
-          supabase.auth.getUser(),
-          timeoutMs,
-          `Auth user check timed out (${timeoutMs}ms)`,
-        );
-
-        if (userResult.error) {
-          const fallbackUser = getStoredSessionUser();
-          if (fallbackUser) {
-            return { user: fallbackUser, error: null };
-          }
-        }
-
-        return {
-          user: userResult.data.user as Record<string, unknown> | null,
-          error: userResult.error,
-        };
-      } catch (err) {
-        const fallbackUser = getStoredSessionUser();
-        if (fallbackUser) {
-          return { user: fallbackUser, error: null };
-        }
-        return { user: null, error: err };
-      } finally {
-        sessionUserPromise = null;
-      }
-    })();
-  }
-
   try {
-    return await withTimeout(
-      sessionUserPromise,
-      timeoutMs,
-      `Auth session check timed out (${timeoutMs}ms)`,
-    );
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (session?.user) {
+      return { user: session.user as Record<string, unknown>, error: null };
+    }
+    const fallbackUser = getStoredSessionUser();
+    if (fallbackUser) return { user: fallbackUser, error: null };
+    return { user: null, error };
   } catch (err) {
     const fallbackUser = getStoredSessionUser();
-    if (fallbackUser) {
-      return { user: fallbackUser, error: null };
-    }
+    if (fallbackUser) return { user: fallbackUser, error: null };
     return { user: null, error: err };
   }
 }
 
-/** 토큰 만료 임박 시 세션 갱신 (제출 직전 호출) */
+/**
+ * 폼 제출 직전 호출. Supabase autoRefreshToken이 백그라운드에서 토큰을
+ * 갱신하므로 단순히 현재 세션 사용자를 반환만 한다.
+ * (이전엔 5분 미만 만료 시 강제 refreshSession을 호출했으나 중복 갱신/
+ *  네트워크 지연으로 오히려 제출이 실패하는 경우가 있어 단순화)
+ */
 export async function refreshAuthBeforeSubmit(
-  timeoutMs = 8000,
+  _timeoutMs?: number,
 ): Promise<{ user: Record<string, unknown> | null; error?: unknown }> {
-  if (!refreshSessionPromise) {
-    refreshSessionPromise = (async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-        if (error || !session) {
-          return { user: null, error: error || new Error('No active session') };
-        }
-
-        const expiresAt = session.expires_at;
-        const now = Math.floor(Date.now() / 1000);
-
-        if (expiresAt && expiresAt - now < 300) {
-          const result = await supabase.auth.refreshSession();
-          if (result.error || !result.data.session) {
-            return { user: null, error: result.error || new Error('Session refresh failed') };
-          }
-          return { user: result.data.session.user as Record<string, unknown>, error: null };
-        }
-
-        return { user: session.user as Record<string, unknown>, error: null };
-      } catch (err) {
-        return { user: null, error: err };
-      } finally {
-        refreshSessionPromise = null;
-      }
-    })();
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (session?.user) return { user: session.user as Record<string, unknown>, error: null };
+    const fallbackUser = getStoredSessionUser();
+    if (fallbackUser) return { user: fallbackUser, error: null };
+    return { user: null, error: error || new Error('No active session') };
+  } catch (err) {
+    const fallbackUser = getStoredSessionUser();
+    if (fallbackUser) return { user: fallbackUser, error: null };
+    return { user: null, error: err };
   }
-
-  return withTimeout(
-    refreshSessionPromise,
-    timeoutMs,
-    'Session refresh timed out',
-  );
 }
 
 /** Invalid Refresh Token 감지 */
@@ -179,9 +99,7 @@ export function isInvalidRefreshTokenError(error: unknown): boolean {
   const message =
     (error as { message?: string } | null)?.message ||
     (typeof error === 'string' ? error : '');
-  return /Invalid Refresh Token|Refresh Token Not Found|refresh token/i.test(
-    message,
-  );
+  return /Invalid Refresh Token|Refresh Token Not Found|refresh token/i.test(message);
 }
 
 /** 무효 세션 정리 (로컬스토리지에서 Supabase 토큰 삭제) */
@@ -195,9 +113,7 @@ export async function clearInvalidSession(): Promise<void> {
       // no-op
     }
   }
-
   if (typeof window === 'undefined') return;
-
   try {
     for (const key of Object.keys(localStorage)) {
       if (key.startsWith('sb-') && key.endsWith('-auth-token')) {

@@ -6,6 +6,10 @@ airport,special_requests,text,NULL 가능,null,10
 airport,base_price,numeric,NULL 가능,0,11
 airport,created_at,timestamp with time zone,NULL 가능,now(),12
 airport,updated_at,timestamp with time zone,NULL 가능,now(),13
+airport_name,airport_id,bigint,NOT NULL,nextval('airport_name_airport_id_seq'::regclass),1
+airport_name,airport_code,text,NOT NULL,null,2
+airport_name,airport_name,text,NOT NULL,null,3
+airport_name,created_at,timestamp with time zone,NULL 가능,now(),4
 airport_price,id,uuid,NOT NULL,gen_random_uuid(),1
 airport_price,airport_code,text,NOT NULL,null,2
 airport_price,service_type,text,NOT NULL,null,3
@@ -40,8 +44,8 @@ business_notifications,estimated_duration,integer,NULL 가능,null,6
 business_notifications,required_action,text,NULL 가능,null,7
 business_notifications,checklist,jsonb,NULL 가능,null,8
 business_notifications,related_users,ARRAY,NULL 가능,null,9
-business_notifications,created_at,timestamp without time zone,NULL 가능,now(),10
-business_notifications,updated_at,timestamp without time zone,NULL 가능,now(),11
+business_notifications,created_at,timestamp with time zone,NULL 가능,now(),10
+business_notifications,updated_at,timestamp with time zone,NULL 가능,now(),11
 car,id,uuid,NOT NULL,gen_random_uuid(),1
 car,base_price,numeric,NULL 가능,null,2
 car,created_at,timestamp with time zone,NULL 가능,now(),3
@@ -49,13 +53,6 @@ car,updated_at,timestamp with time zone,NULL 가능,now(),4
 car,car_code,character varying,NULL 가능,null,5
 car,special_requests,text,NULL 가능,null,6
 car,car_count,integer,NULL 가능,1,7
-car_price_old,car_code,text,NOT NULL,null,1
-car_price_old,car_category,text,NULL 가능,null,2
-car_price_old,cruise,text,NULL 가능,null,3
-car_price_old,car_type,text,NULL 가능,null,4
-car_price_old,price,numeric,NULL 가능,null,5
-car_price_old,schedule,text,NULL 가능,null,6
-car_price_old,passenger_count,text,NULL 가능,null,7
 confirmation_status,id,uuid,NOT NULL,gen_random_uuid(),1
 confirmation_status,reservation_id,uuid,NOT NULL,null,2
 confirmation_status,quote_id,uuid,NULL 가능,null,3
@@ -78,6 +75,14 @@ cruise,special_requests,text,NULL 가능,null,10
 cruise,base_price,numeric,NULL 가능,0,11
 cruise,created_at,timestamp with time zone,NULL 가능,now(),12
 cruise,updated_at,timestamp with time zone,NULL 가능,now(),13
+cruise_document,id,uuid,NOT NULL,gen_random_uuid(),1
+cruise_document,user_id,uuid,NOT NULL,null,2
+cruise_document,reservation_id,uuid,NULL 가능,null,3
+cruise_document,document_type,text,NOT NULL,null,4
+cruise_document,image_data,text,NOT NULL,null,5
+cruise_document,checkout_date,date,NULL 가능,null,6
+cruise_document,created_at,timestamp with time zone,NULL 가능,now(),7
+cruise_document,updated_at,timestamp with time zone,NULL 가능,now(),8
 cruise_holiday_surcharge,id,uuid,NOT NULL,gen_random_uuid(),1
 cruise_holiday_surcharge,cruise_name,text,NOT NULL,null,2
 cruise_holiday_surcharge,schedule_type,text,NULL 가능,'1N2D'::text,3
@@ -161,7 +166,7 @@ cruise_rate_card,room_type,text,NOT NULL,null,4
 cruise_rate_card,room_type_en,text,NULL 가능,null,5
 cruise_rate_card,price_adult,numeric,NOT NULL,0,6
 cruise_rate_card,price_child,numeric,NULL 가능,null,7
-cruise_rate_card,price_infant,numeric,NULL 가능,null,8
+cruise_rate_card,price_infant,numeric,NULL 가능,0,8
 cruise_rate_card,price_extra_bed,numeric,NULL 가능,null,9
 cruise_rate_card,price_single,numeric,NULL 가능,null,10
 cruise_rate_card,valid_year,integer,NOT NULL,null,11
@@ -208,8 +213,8 @@ cruise_tour_options,option_price,bigint,NOT NULL,null,6
 cruise_tour_options,option_type,character varying,NULL 가능,'addon'::character varying,7
 cruise_tour_options,description,text,NULL 가능,null,8
 cruise_tour_options,is_active,boolean,NULL 가능,true,9
-cruise_tour_options,created_at,timestamp without time zone,NULL 가능,CURRENT_TIMESTAMP,10
-cruise_tour_options,updated_at,timestamp without time zone,NULL 가능,CURRENT_TIMESTAMP,11
+cruise_tour_options,created_at,timestamp with time zone,NULL 가능,CURRENT_TIMESTAMP,10
+cruise_tour_options,updated_at,timestamp with time zone,NULL 가능,CURRENT_TIMESTAMP,11
 customer_notifications,id,uuid,NOT NULL,gen_random_uuid(),1
 customer_notifications,notification_id,uuid,NULL 가능,null,2
 customer_notifications,customer_id,uuid,NULL 가능,null,3
@@ -218,12 +223,12 @@ customer_notifications,customer_phone,character varying,NULL 가능,null,5
 customer_notifications,customer_email,character varying,NULL 가능,null,6
 customer_notifications,inquiry_type,character varying,NULL 가능,null,7
 customer_notifications,service_type,character varying,NULL 가능,null,8
-customer_notifications,response_deadline,timestamp without time zone,NULL 가능,null,9
+customer_notifications,response_deadline,timestamp with time zone,NULL 가능,null,9
 customer_notifications,customer_satisfaction,integer,NULL 가능,null,10
 customer_notifications,follow_up_required,boolean,NULL 가능,false,11
 customer_notifications,resolution_notes,text,NULL 가능,null,12
-customer_notifications,created_at,timestamp without time zone,NULL 가능,now(),13
-customer_notifications,updated_at,timestamp without time zone,NULL 가능,now(),14
+customer_notifications,created_at,timestamp with time zone,NULL 가능,now(),13
+customer_notifications,updated_at,timestamp with time zone,NULL 가능,now(),14
 customer_notifications,processed_at,timestamp with time zone,NULL 가능,null,15
 customer_notifications,status,character varying,NULL 가능,null,16
 customer_notifications,manager_name,character varying,NULL 가능,null,17
@@ -266,6 +271,12 @@ customer_requests,updated_at,timestamp with time zone,NULL 가능,now(),20
 customer_requests,due_date,timestamp with time zone,NULL 가능,null,21
 customer_requests,processed_at,timestamp with time zone,NULL 가능,null,22
 customer_requests,manager_note,text,NULL 가능,null,23
+direct_booking_submit_requests,id,uuid,NOT NULL,gen_random_uuid(),1
+direct_booking_submit_requests,user_id,uuid,NOT NULL,null,2
+direct_booking_submit_requests,quote_id,uuid,NOT NULL,null,3
+direct_booking_submit_requests,idempotency_key,text,NOT NULL,null,4
+direct_booking_submit_requests,payload,jsonb,NULL 가능,null,5
+direct_booking_submit_requests,created_at,timestamp with time zone,NOT NULL,now(),6
 dispatcher_users,id,uuid,NULL 가능,null,1
 dispatcher_users,name,text,NULL 가능,null,2
 dispatcher_users,email,text,NULL 가능,null,3
@@ -295,8 +306,8 @@ hotel_info,phone,text,NULL 가능,null,8
 hotel_info,currency,character varying,NULL 가능,'VND'::character varying,9
 hotel_info,notes,text,NULL 가능,null,10
 hotel_info,active,boolean,NULL 가능,true,11
-hotel_info,created_at,timestamp without time zone,NULL 가능,now(),12
-hotel_info,updated_at,timestamp without time zone,NULL 가능,now(),13
+hotel_info,created_at,timestamp with time zone,NULL 가능,now(),12
+hotel_info,updated_at,timestamp with time zone,NULL 가능,now(),13
 hotel_price,hotel_price_code,text,NOT NULL,null,1
 hotel_price,hotel_code,character varying,NOT NULL,null,2
 hotel_price,hotel_name,text,NOT NULL,null,3
@@ -313,8 +324,8 @@ hotel_price,start_date,date,NOT NULL,null,13
 hotel_price,end_date,date,NOT NULL,null,14
 hotel_price,weekday_type,text,NULL 가능,'ALL'::text,15
 hotel_price,notes,text,NULL 가능,null,16
-hotel_price,created_at,timestamp without time zone,NULL 가능,now(),17
-hotel_price,updated_at,timestamp without time zone,NULL 가능,now(),18
+hotel_price,created_at,timestamp with time zone,NULL 가능,now(),17
+hotel_price,updated_at,timestamp with time zone,NULL 가능,now(),18
 manager_reservations,re_id,uuid,NULL 가능,null,1
 manager_reservations,re_user_id,uuid,NULL 가능,null,2
 manager_reservations,re_quote_id,uuid,NULL 가능,null,3
@@ -329,7 +340,7 @@ manager_reservations,customer_phone,text,NULL 가능,null,11
 notification_reads,id,uuid,NOT NULL,gen_random_uuid(),1
 notification_reads,notification_id,uuid,NULL 가능,null,2
 notification_reads,user_id,uuid,NULL 가능,null,3
-notification_reads,read_at,timestamp without time zone,NULL 가능,now(),4
+notification_reads,read_at,timestamp with time zone,NULL 가능,now(),4
 notification_templates,id,uuid,NOT NULL,gen_random_uuid(),1
 notification_templates,name,character varying,NOT NULL,null,2
 notification_templates,type,character varying,NOT NULL,null,3
@@ -339,8 +350,8 @@ notification_templates,message_template,text,NOT NULL,null,6
 notification_templates,default_priority,character varying,NULL 가능,'normal'::character varying,7
 notification_templates,auto_assign_rule,jsonb,NULL 가능,null,8
 notification_templates,is_active,boolean,NULL 가능,true,9
-notification_templates,created_at,timestamp without time zone,NULL 가능,now(),10
-notification_templates,updated_at,timestamp without time zone,NULL 가능,now(),11
+notification_templates,created_at,timestamp with time zone,NULL 가능,now(),10
+notification_templates,updated_at,timestamp with time zone,NULL 가능,now(),11
 notifications,id,uuid,NOT NULL,gen_random_uuid(),1
 notifications,type,character varying,NOT NULL,null,2
 notifications,category,character varying,NOT NULL,null,3
@@ -352,11 +363,11 @@ notifications,priority,character varying,NULL 가능,'normal'::character varying
 notifications,status,character varying,NULL 가능,'unread'::character varying,9
 notifications,created_by,uuid,NULL 가능,null,10
 notifications,assigned_to,uuid,NULL 가능,null,11
-notifications,due_date,timestamp without time zone,NULL 가능,null,12
+notifications,due_date,timestamp with time zone,NULL 가능,null,12
 notifications,metadata,jsonb,NULL 가능,null,13
-notifications,created_at,timestamp without time zone,NULL 가능,now(),14
-notifications,updated_at,timestamp without time zone,NULL 가능,now(),15
-notifications,processed_at,timestamp without time zone,NULL 가능,null,16
+notifications,created_at,timestamp with time zone,NULL 가능,now(),14
+notifications,updated_at,timestamp with time zone,NULL 가능,now(),15
+notifications,processed_at,timestamp with time zone,NULL 가능,null,16
 notifications,processed_by_name,character varying,NULL 가능,null,17
 notifications,subcategory,text,NULL 가능,'일반'::text,18
 notifications,customer_name,text,NULL 가능,null,19
@@ -467,12 +478,14 @@ reservation,re_child_count,integer,NULL 가능,0,27
 reservation,re_infant_count,integer,NULL 가능,0,28
 reservation,reservation_date,date,NULL 가능,null,29
 reservation,price_breakdown,jsonb,NULL 가능,null,30
+reservation,manual_additional_fee,numeric,NOT NULL,0,31
+reservation,manual_additional_fee_detail,text,NULL 가능,null,32
 reservation_airport,id,uuid,NOT NULL,gen_random_uuid(),1
 reservation_airport,reservation_id,uuid,NULL 가능,null,2
 reservation_airport,airport_price_code,text,NULL 가능,'AP01'::text,3
 reservation_airport,ra_airport_location,text,NULL 가능,'공항'::text,4
 reservation_airport,ra_flight_number,text,NULL 가능,null,5
-reservation_airport,ra_datetime,timestamp without time zone,NULL 가능,now(),6
+reservation_airport,ra_datetime,timestamp with time zone,NULL 가능,now(),6
 reservation_airport,ra_stopover_location,text,NULL 가능,null,7
 reservation_airport,ra_stopover_wait_minutes,integer,NULL 가능,null,8
 reservation_airport,ra_car_count,integer,NULL 가능,1,9
@@ -488,13 +501,24 @@ reservation_airport,pickup_confirmed_at,timestamp with time zone,NULL 가능,nul
 reservation_airport,dispatch_memo,text,NULL 가능,null,19
 reservation_airport,way_type,text,NULL 가능,'pickup'::text,20
 reservation_airport,accommodation_info,text,NULL 가능,null,21
+reservation_airport_fasttrack,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_airport_fasttrack,reservation_id,uuid,NOT NULL,null,2
+reservation_airport_fasttrack,reservation_airport_id,uuid,NOT NULL,null,3
+reservation_airport_fasttrack,way_type,text,NOT NULL,null,4
+reservation_airport_fasttrack,applicant_order,integer,NOT NULL,null,5
+reservation_airport_fasttrack,applicant_name,text,NOT NULL,null,6
+reservation_airport_fasttrack,created_at,timestamp with time zone,NOT NULL,now(),7
+reservation_airport_fasttrack,updated_at,timestamp with time zone,NOT NULL,now(),8
+reservation_airport_fasttrack,unit_price_usd,numeric,NULL 가능,null,9
+reservation_airport_fasttrack,total_price_usd,numeric,NULL 가능,null,10
+reservation_airport_fasttrack,usd_to_krw_rate,numeric,NULL 가능,null,11
+reservation_airport_fasttrack,total_price_krw,integer,NULL 가능,null,12
 reservation_car_sht,reservation_id,uuid,NULL 가능,null,1
 reservation_car_sht,vehicle_number,text,NULL 가능,null,2
 reservation_car_sht,seat_number,text,NULL 가능,null,3
 reservation_car_sht,sht_category,text,NULL 가능,null,4
 reservation_car_sht,id,uuid,NOT NULL,gen_random_uuid(),5
 reservation_car_sht,created_at,timestamp with time zone,NOT NULL,now(),6
-reservation_car_sht,usage_date,timestamp with time zone,NULL 가능,null,7
 reservation_car_sht,dispatch_code,text,NULL 가능,null,8
 reservation_car_sht,pickup_confirmed_at,timestamp with time zone,NULL 가능,null,9
 reservation_car_sht,dispatch_memo,text,NULL 가능,null,10
@@ -508,7 +532,177 @@ reservation_car_sht,car_total_price,numeric,NULL 가능,0,17
 reservation_car_sht,request_note,text,NULL 가능,null,18
 reservation_car_sht,updated_at,timestamp with time zone,NULL 가능,now(),19
 reservation_car_sht,unit_price,numeric,NULL 가능,null,20
-reservation_car_sht,accommodation_info,text,NULL 가능,null,21
+reservation_car_sht,usage_date,date,NULL 가능,null,22
+reservation_change_airport,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_airport,request_id,uuid,NOT NULL,null,2
+reservation_change_airport,reservation_id,uuid,NOT NULL,null,3
+reservation_change_airport,airport_price_code,text,NULL 가능,null,4
+reservation_change_airport,ra_airport_location,text,NULL 가능,null,5
+reservation_change_airport,ra_flight_number,text,NULL 가능,null,6
+reservation_change_airport,ra_datetime,timestamp with time zone,NULL 가능,null,7
+reservation_change_airport,ra_stopover_location,text,NULL 가능,null,8
+reservation_change_airport,ra_stopover_wait_minutes,integer,NULL 가능,null,9
+reservation_change_airport,ra_car_count,integer,NULL 가능,null,10
+reservation_change_airport,ra_passenger_count,integer,NULL 가능,null,11
+reservation_change_airport,ra_luggage_count,integer,NULL 가능,null,12
+reservation_change_airport,request_note,text,NULL 가능,null,13
+reservation_change_airport,unit_price,numeric,NULL 가능,null,14
+reservation_change_airport,total_price,numeric,NULL 가능,null,15
+reservation_change_airport,dispatch_code,text,NULL 가능,null,16
+reservation_change_airport,pickup_confirmed_at,timestamp with time zone,NULL 가능,null,17
+reservation_change_airport,dispatch_memo,text,NULL 가능,null,18
+reservation_change_airport,way_type,text,NULL 가능,null,19
+reservation_change_airport,accommodation_info,text,NULL 가능,null,20
+reservation_change_airport,ra_airport_name,text,NULL 가능,null,21
+reservation_change_airport,created_at,timestamp with time zone,NOT NULL,now(),22
+reservation_change_airport,updated_at,timestamp with time zone,NOT NULL,now(),23
+reservation_change_car_sht,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_car_sht,request_id,uuid,NOT NULL,null,2
+reservation_change_car_sht,reservation_id,uuid,NOT NULL,null,3
+reservation_change_car_sht,vehicle_number,text,NULL 가능,null,4
+reservation_change_car_sht,seat_number,text,NULL 가능,null,5
+reservation_change_car_sht,sht_category,text,NULL 가능,null,6
+reservation_change_car_sht,dispatch_code,text,NULL 가능,null,7
+reservation_change_car_sht,pickup_confirmed_at,timestamp with time zone,NULL 가능,null,8
+reservation_change_car_sht,dispatch_memo,text,NULL 가능,null,9
+reservation_change_car_sht,car_price_code,text,NULL 가능,null,10
+reservation_change_car_sht,car_count,integer,NULL 가능,null,11
+reservation_change_car_sht,passenger_count,integer,NULL 가능,null,12
+reservation_change_car_sht,pickup_datetime,date,NULL 가능,null,13
+reservation_change_car_sht,pickup_location,text,NULL 가능,null,14
+reservation_change_car_sht,dropoff_location,text,NULL 가능,null,15
+reservation_change_car_sht,car_total_price,numeric,NULL 가능,null,16
+reservation_change_car_sht,request_note,text,NULL 가능,null,17
+reservation_change_car_sht,unit_price,numeric,NULL 가능,null,18
+reservation_change_car_sht,accommodation_info,text,NULL 가능,null,19
+reservation_change_car_sht,usage_date,date,NULL 가능,null,20
+reservation_change_car_sht,created_at,timestamp with time zone,NOT NULL,now(),21
+reservation_change_car_sht,updated_at,timestamp with time zone,NOT NULL,now(),22
+reservation_change_cruise,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_cruise,request_id,uuid,NOT NULL,null,2
+reservation_change_cruise,reservation_id,uuid,NOT NULL,null,3
+reservation_change_cruise,room_price_code,text,NULL 가능,null,4
+reservation_change_cruise,checkin,date,NULL 가능,null,5
+reservation_change_cruise,guest_count,integer,NULL 가능,null,6
+reservation_change_cruise,unit_price,numeric,NULL 가능,null,7
+reservation_change_cruise,room_total_price,numeric,NULL 가능,null,8
+reservation_change_cruise,request_note,text,NULL 가능,null,9
+reservation_change_cruise,boarding_code,text,NULL 가능,null,10
+reservation_change_cruise,boarding_assist,boolean,NULL 가능,null,11
+reservation_change_cruise,room_count,integer,NULL 가능,null,12
+reservation_change_cruise,adult_count,integer,NULL 가능,null,13
+reservation_change_cruise,child_count,integer,NULL 가능,null,14
+reservation_change_cruise,infant_count,integer,NULL 가능,null,15
+reservation_change_cruise,accommodation_info,text,NULL 가능,null,16
+reservation_change_cruise,child_extra_bed_count,integer,NULL 가능,null,17
+reservation_change_cruise,extra_bed_count,integer,NULL 가능,null,18
+reservation_change_cruise,single_count,integer,NULL 가능,null,19
+reservation_change_cruise,connecting_room,boolean,NULL 가능,null,20
+reservation_change_cruise,birthday_event,boolean,NULL 가능,null,21
+reservation_change_cruise,birthday_name,text,NULL 가능,null,22
+reservation_change_cruise,created_at,timestamp with time zone,NOT NULL,now(),23
+reservation_change_cruise,updated_at,timestamp with time zone,NOT NULL,now(),24
+reservation_change_cruise_car,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_cruise_car,request_id,uuid,NOT NULL,null,2
+reservation_change_cruise_car,reservation_id,uuid,NOT NULL,null,3
+reservation_change_cruise_car,car_price_code,text,NULL 가능,null,4
+reservation_change_cruise_car,car_count,integer,NULL 가능,null,5
+reservation_change_cruise_car,passenger_count,integer,NULL 가능,null,6
+reservation_change_cruise_car,pickup_datetime,date,NULL 가능,null,7
+reservation_change_cruise_car,pickup_location,text,NULL 가능,null,8
+reservation_change_cruise_car,dropoff_location,text,NULL 가능,null,9
+reservation_change_cruise_car,car_total_price,numeric,NULL 가능,null,10
+reservation_change_cruise_car,request_note,text,NULL 가능,null,11
+reservation_change_cruise_car,unit_price,numeric,NULL 가능,null,12
+reservation_change_cruise_car,dispatch_code,text,NULL 가능,null,13
+reservation_change_cruise_car,pickup_confirmed_at,timestamp with time zone,NULL 가능,null,14
+reservation_change_cruise_car,dispatch_memo,text,NULL 가능,null,15
+reservation_change_cruise_car,rentcar_price_code,text,NULL 가능,null,16
+reservation_change_cruise_car,way_type,text,NULL 가능,null,17
+reservation_change_cruise_car,route,text,NULL 가능,null,18
+reservation_change_cruise_car,vehicle_type,text,NULL 가능,null,19
+reservation_change_cruise_car,rental_type,text,NULL 가능,null,20
+reservation_change_cruise_car,return_datetime,date,NULL 가능,null,21
+reservation_change_cruise_car,created_at,timestamp with time zone,NOT NULL,now(),22
+reservation_change_cruise_car,updated_at,timestamp with time zone,NOT NULL,now(),23
+reservation_change_hotel,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_hotel,request_id,uuid,NOT NULL,null,2
+reservation_change_hotel,reservation_id,uuid,NOT NULL,null,3
+reservation_change_hotel,schedule,text,NULL 가능,null,4
+reservation_change_hotel,room_count,integer,NULL 가능,null,5
+reservation_change_hotel,checkin_date,date,NULL 가능,null,6
+reservation_change_hotel,breakfast_service,text,NULL 가능,null,7
+reservation_change_hotel,hotel_category,text,NULL 가능,null,8
+reservation_change_hotel,guest_count,integer,NULL 가능,null,9
+reservation_change_hotel,total_price,numeric,NULL 가능,null,10
+reservation_change_hotel,hotel_price_code,text,NULL 가능,null,11
+reservation_change_hotel,request_note,text,NULL 가능,null,12
+reservation_change_hotel,unit_price,numeric,NULL 가능,null,13
+reservation_change_hotel,assignment_code,text,NULL 가능,null,14
+reservation_change_hotel,adult_count,integer,NULL 가능,null,15
+reservation_change_hotel,child_count,integer,NULL 가능,null,16
+reservation_change_hotel,infant_count,integer,NULL 가능,null,17
+reservation_change_hotel,accommodation_info,text,NULL 가능,null,18
+reservation_change_hotel,created_at,timestamp with time zone,NOT NULL,now(),19
+reservation_change_hotel,updated_at,timestamp with time zone,NOT NULL,now(),20
+reservation_change_rentcar,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_rentcar,request_id,uuid,NOT NULL,null,2
+reservation_change_rentcar,reservation_id,uuid,NOT NULL,null,3
+reservation_change_rentcar,rentcar_price_code,text,NULL 가능,null,4
+reservation_change_rentcar,rentcar_count,integer,NULL 가능,null,5
+reservation_change_rentcar,unit_price,numeric,NULL 가능,null,6
+reservation_change_rentcar,car_count,integer,NULL 가능,null,7
+reservation_change_rentcar,passenger_count,integer,NULL 가능,null,8
+reservation_change_rentcar,pickup_datetime,timestamp with time zone,NULL 가능,null,9
+reservation_change_rentcar,pickup_location,text,NULL 가능,null,10
+reservation_change_rentcar,destination,text,NULL 가능,null,11
+reservation_change_rentcar,via_location,text,NULL 가능,null,12
+reservation_change_rentcar,via_waiting,text,NULL 가능,null,13
+reservation_change_rentcar,luggage_count,integer,NULL 가능,null,14
+reservation_change_rentcar,total_price,numeric,NULL 가능,null,15
+reservation_change_rentcar,request_note,text,NULL 가능,null,16
+reservation_change_rentcar,dispatch_code,text,NULL 가능,null,17
+reservation_change_rentcar,pickup_confirmed_at,timestamp with time zone,NULL 가능,null,18
+reservation_change_rentcar,dispatch_memo,text,NULL 가능,null,19
+reservation_change_rentcar,way_type,text,NULL 가능,null,20
+reservation_change_rentcar,return_datetime,timestamp with time zone,NULL 가능,null,21
+reservation_change_rentcar,return_pickup_location,text,NULL 가능,null,22
+reservation_change_rentcar,return_destination,text,NULL 가능,null,23
+reservation_change_rentcar,return_via_location,text,NULL 가능,null,24
+reservation_change_rentcar,return_via_waiting,text,NULL 가능,null,25
+reservation_change_rentcar,created_at,timestamp with time zone,NOT NULL,now(),26
+reservation_change_rentcar,updated_at,timestamp with time zone,NOT NULL,now(),27
+reservation_change_request,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_request,reservation_id,uuid,NOT NULL,null,2
+reservation_change_request,re_type,text,NOT NULL,null,3
+reservation_change_request,requester_user_id,uuid,NOT NULL,null,4
+reservation_change_request,status,text,NOT NULL,'pending'::text,5
+reservation_change_request,customer_note,text,NULL 가능,null,6
+reservation_change_request,manager_note,text,NULL 가능,null,7
+reservation_change_request,submitted_at,timestamp with time zone,NOT NULL,now(),8
+reservation_change_request,reviewed_at,timestamp with time zone,NULL 가능,null,9
+reservation_change_request,reviewed_by,uuid,NULL 가능,null,10
+reservation_change_request,created_at,timestamp with time zone,NOT NULL,now(),11
+reservation_change_request,updated_at,timestamp with time zone,NOT NULL,now(),12
+reservation_change_request,snapshot_data,jsonb,NULL 가능,null,13
+reservation_change_tour,id,uuid,NOT NULL,gen_random_uuid(),1
+reservation_change_tour,request_id,uuid,NOT NULL,null,2
+reservation_change_tour,reservation_id,uuid,NOT NULL,null,3
+reservation_change_tour,tour_price_code,text,NULL 가능,null,4
+reservation_change_tour,tour_capacity,integer,NULL 가능,null,5
+reservation_change_tour,pickup_location,text,NULL 가능,null,6
+reservation_change_tour,dropoff_location,text,NULL 가능,null,7
+reservation_change_tour,total_price,numeric,NULL 가능,null,8
+reservation_change_tour,request_note,text,NULL 가능,null,9
+reservation_change_tour,usage_date,date,NULL 가능,null,10
+reservation_change_tour,unit_price,numeric,NULL 가능,null,11
+reservation_change_tour,adult_count,integer,NULL 가능,null,12
+reservation_change_tour,child_count,integer,NULL 가능,null,13
+reservation_change_tour,infant_count,integer,NULL 가능,null,14
+reservation_change_tour,accommodation_info,text,NULL 가능,null,15
+reservation_change_tour,dispatch_code,text,NULL 가능,null,16
+reservation_change_tour,created_at,timestamp with time zone,NOT NULL,now(),17
+reservation_change_tour,updated_at,timestamp with time zone,NOT NULL,now(),18
 reservation_confirmation,id,uuid,NOT NULL,gen_random_uuid(),1
 reservation_confirmation,quote_id,uuid,NULL 가능,null,2
 reservation_confirmation,sender_id,uuid,NULL 가능,null,3
@@ -548,7 +742,7 @@ reservation_cruise_car,reservation_id,uuid,NOT NULL,null,2
 reservation_cruise_car,car_price_code,text,NULL 가능,null,3
 reservation_cruise_car,car_count,integer,NULL 가능,0,4
 reservation_cruise_car,passenger_count,integer,NULL 가능,0,5
-reservation_cruise_car,pickup_datetime,date,NULL 가능,null,6
+reservation_cruise_car,pickup_datetime,date,NOT NULL,null,6
 reservation_cruise_car,pickup_location,text,NULL 가능,null,7
 reservation_cruise_car,dropoff_location,text,NULL 가능,null,8
 reservation_cruise_car,car_total_price,numeric,NULL 가능,0,9
@@ -565,6 +759,12 @@ reservation_cruise_car,route,text,NULL 가능,null,19
 reservation_cruise_car,vehicle_type,text,NULL 가능,null,20
 reservation_cruise_car,rental_type,text,NULL 가능,null,21
 reservation_cruise_car,return_datetime,date,NULL 가능,null,22
+reservation_daily_stats,id,bigint,NOT NULL,null,1
+reservation_daily_stats,stat_date,date,NOT NULL,null,2
+reservation_daily_stats,service_type,text,NOT NULL,null,3
+reservation_daily_stats,status,text,NOT NULL,null,4
+reservation_daily_stats,count,integer,NOT NULL,0,5
+reservation_daily_stats,created_at,timestamp with time zone,NOT NULL,now(),6
 reservation_hotel,reservation_id,uuid,NULL 가능,null,1
 reservation_hotel,schedule,text,NULL 가능,null,2
 reservation_hotel,room_count,integer,NULL 가능,null,3
@@ -608,7 +808,7 @@ reservation_no_quote_reservation_airport_backup,reservation_id,uuid,NULL 가능,
 reservation_no_quote_reservation_airport_backup,airport_price_code,text,NULL 가능,null,3
 reservation_no_quote_reservation_airport_backup,ra_airport_location,text,NULL 가능,null,4
 reservation_no_quote_reservation_airport_backup,ra_flight_number,text,NULL 가능,null,5
-reservation_no_quote_reservation_airport_backup,ra_datetime,timestamp without time zone,NULL 가능,null,6
+reservation_no_quote_reservation_airport_backup,ra_datetime,timestamp with time zone,NULL 가능,null,6
 reservation_no_quote_reservation_airport_backup,ra_stopover_location,text,NULL 가능,null,7
 reservation_no_quote_reservation_airport_backup,ra_stopover_wait_minutes,integer,NULL 가능,null,8
 reservation_no_quote_reservation_airport_backup,ra_car_count,integer,NULL 가능,null,9
@@ -724,7 +924,7 @@ reservation_rentcar,rentcar_count,integer,NOT NULL,1,3
 reservation_rentcar,unit_price,numeric,NOT NULL,0,4
 reservation_rentcar,car_count,integer,NULL 가능,null,5
 reservation_rentcar,passenger_count,integer,NULL 가능,null,6
-reservation_rentcar,pickup_datetime,timestamp without time zone,NULL 가능,null,7
+reservation_rentcar,pickup_datetime,timestamp with time zone,NULL 가능,null,7
 reservation_rentcar,pickup_location,text,NULL 가능,null,8
 reservation_rentcar,destination,text,NULL 가능,null,9
 reservation_rentcar,via_location,text,NULL 가능,null,10
@@ -738,11 +938,20 @@ reservation_rentcar,dispatch_code,text,NULL 가능,null,17
 reservation_rentcar,pickup_confirmed_at,timestamp with time zone,NULL 가능,null,18
 reservation_rentcar,dispatch_memo,text,NULL 가능,null,19
 reservation_rentcar,way_type,text,NULL 가능,null,20
-reservation_rentcar,return_datetime,timestamp without time zone,NULL 가능,null,21
+reservation_rentcar,return_datetime,timestamp with time zone,NULL 가능,null,21
 reservation_rentcar,return_pickup_location,text,NULL 가능,null,22
 reservation_rentcar,return_destination,text,NULL 가능,null,23
 reservation_rentcar,return_via_location,text,NULL 가능,null,24
 reservation_rentcar,return_via_waiting,text,NULL 가능,null,25
+reservation_status_log,id,bigint,NOT NULL,null,1
+reservation_status_log,reservation_id,uuid,NOT NULL,null,2
+reservation_status_log,re_type,text,NULL 가능,null,3
+reservation_status_log,prev_status,text,NULL 가능,null,4
+reservation_status_log,new_status,text,NOT NULL,null,5
+reservation_status_log,changed_by,uuid,NULL 가능,null,6
+reservation_status_log,changed_by_email,text,NULL 가능,null,7
+reservation_status_log,changed_at,timestamp with time zone,NOT NULL,now(),8
+reservation_status_log,note,text,NULL 가능,null,9
 reservation_tour,reservation_id,uuid,NULL 가능,null,1
 reservation_tour,tour_price_code,text,NULL 가능,null,2
 reservation_tour,tour_capacity,integer,NULL 가능,null,3
@@ -757,7 +966,6 @@ reservation_tour,unit_price,numeric,NULL 가능,null,11
 reservation_tour,adult_count,integer,NULL 가능,1,12
 reservation_tour,child_count,integer,NULL 가능,0,13
 reservation_tour,infant_count,integer,NULL 가능,0,14
-reservation_tour,accommodation_info,text,NULL 가능,null,15
 reservation_tour,dispatch_code,text,NULL 가능,null,16
 room,id,uuid,NOT NULL,gen_random_uuid(),1
 room,base_price,numeric,NULL 가능,null,2
@@ -997,8 +1205,8 @@ tour,special_age_policy_description,text,NULL 가능,null,20
 tour,contact_info,jsonb,NULL 가능,null,21
 tour,payment_notes,text,NULL 가능,null,22
 tour,cancellation_policy_url,text,NULL 가능,null,23
-tour,created_at,timestamp without time zone,NULL 가능,now(),24
-tour,updated_at,timestamp without time zone,NULL 가능,now(),25
+tour,created_at,timestamp with time zone,NULL 가능,now(),24
+tour,updated_at,timestamp with time zone,NULL 가능,now(),25
 tour,program_type,text,NULL 가능,null,26
 tour,is_cruise_addon,boolean,NULL 가능,false,27
 tour_addon_options,option_id,uuid,NOT NULL,gen_random_uuid(),1
@@ -1017,8 +1225,8 @@ tour_addon_options,is_required,boolean,NULL 가능,false,13
 tour_addon_options,is_available,boolean,NULL 가능,true,14
 tour_addon_options,max_capacity,integer,NULL 가능,null,15
 tour_addon_options,order_seq,integer,NULL 가능,null,16
-tour_addon_options,created_at,timestamp without time zone,NULL 가능,now(),17
-tour_addon_options,updated_at,timestamp without time zone,NULL 가능,now(),18
+tour_addon_options,created_at,timestamp with time zone,NULL 가능,now(),17
+tour_addon_options,updated_at,timestamp with time zone,NULL 가능,now(),18
 tour_booking,booking_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_booking,user_id,uuid,NOT NULL,null,2
 tour_booking,tour_id,uuid,NOT NULL,null,3
@@ -1033,8 +1241,8 @@ tour_booking,selected_spa_menu,text,NULL 가능,null,11
 tour_booking,total_price,numeric,NULL 가능,null,12
 tour_booking,deposit_paid,numeric,NULL 가능,null,13
 tour_booking,remaining_balance,numeric,NULL 가능,null,14
-tour_booking,deposit_paid_at,timestamp without time zone,NULL 가능,null,15
-tour_booking,payment_due_date,timestamp without time zone,NULL 가능,null,16
+tour_booking,deposit_paid_at,timestamp with time zone,NULL 가능,null,15
+tour_booking,payment_due_date,timestamp with time zone,NULL 가능,null,16
 tour_booking,booking_status,USER-DEFINED,NULL 가능,'pending'::booking_status,17
 tour_booking,payment_status,USER-DEFINED,NULL 가능,'unpaid'::payment_status,18
 tour_booking,payment_method,USER-DEFINED,NULL 가능,null,19
@@ -1043,9 +1251,9 @@ tour_booking,selected_options,jsonb,NULL 가능,null,21
 tour_booking,guide_info,jsonb,NULL 가능,null,22
 tour_booking,booking_source,text,NULL 가능,'kakao'::text,23
 tour_booking,notes,text,NULL 가능,null,24
-tour_booking,created_at,timestamp without time zone,NULL 가능,now(),25
-tour_booking,updated_at,timestamp without time zone,NULL 가능,now(),26
-tour_booking,cancelled_at,timestamp without time zone,NULL 가능,null,27
+tour_booking,created_at,timestamp with time zone,NULL 가능,now(),25
+tour_booking,updated_at,timestamp with time zone,NULL 가능,now(),26
+tour_booking,cancelled_at,timestamp with time zone,NULL 가능,null,27
 tour_cancellation_policy,policy_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_cancellation_policy,tour_id,uuid,NOT NULL,null,2
 tour_cancellation_policy,policy_name,text,NULL 가능,null,3
@@ -1058,7 +1266,7 @@ tour_cancellation_policy,penalty_rate,numeric,NULL 가능,null,9
 tour_cancellation_policy,description,text,NULL 가능,null,10
 tour_cancellation_policy,refundable,boolean,NULL 가능,true,11
 tour_cancellation_policy,notes,text,NULL 가능,null,12
-tour_cancellation_policy,created_at,timestamp without time zone,NULL 가능,now(),13
+tour_cancellation_policy,created_at,timestamp with time zone,NULL 가능,now(),13
 tour_cruise_integration,cruise_integration_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_cruise_integration,tour_id,uuid,NOT NULL,null,2
 tour_cruise_integration,is_cruise_compatible,boolean,NULL 가능,true,3
@@ -1068,8 +1276,8 @@ tour_cruise_integration,requires_cruise_booking,boolean,NULL 가능,false,6
 tour_cruise_integration,cruise_booking_code,text,NULL 가능,null,7
 tour_cruise_integration,cruise_contact_info,jsonb,NULL 가능,null,8
 tour_cruise_integration,is_active,boolean,NULL 가능,true,9
-tour_cruise_integration,created_at,timestamp without time zone,NULL 가능,CURRENT_TIMESTAMP,10
-tour_cruise_integration,updated_at,timestamp without time zone,NULL 가능,CURRENT_TIMESTAMP,11
+tour_cruise_integration,created_at,timestamp with time zone,NULL 가능,CURRENT_TIMESTAMP,10
+tour_cruise_integration,updated_at,timestamp with time zone,NULL 가능,CURRENT_TIMESTAMP,11
 tour_exclusions,exclusion_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_exclusions,tour_id,uuid,NOT NULL,null,2
 tour_exclusions,order_seq,integer,NULL 가능,null,3
@@ -1078,7 +1286,7 @@ tour_exclusions,category,text,NULL 가능,null,5
 tour_exclusions,estimated_price,numeric,NULL 가능,null,6
 tour_exclusions,price_currency,text,NULL 가능,'VND'::text,7
 tour_exclusions,notes,text,NULL 가능,null,8
-tour_exclusions,created_at,timestamp without time zone,NULL 가능,now(),9
+tour_exclusions,created_at,timestamp with time zone,NULL 가능,now(),9
 tour_important_info,info_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_important_info,tour_id,uuid,NOT NULL,null,2
 tour_important_info,info_type,USER-DEFINED,NULL 가능,null,3
@@ -1087,14 +1295,14 @@ tour_important_info,content,text,NOT NULL,null,5
 tour_important_info,order_seq,integer,NULL 가능,null,6
 tour_important_info,is_highlighted,boolean,NULL 가능,false,7
 tour_important_info,icon,text,NULL 가능,null,8
-tour_important_info,created_at,timestamp without time zone,NULL 가능,now(),9
+tour_important_info,created_at,timestamp with time zone,NULL 가능,now(),9
 tour_inclusions,inclusion_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_inclusions,tour_id,uuid,NOT NULL,null,2
 tour_inclusions,order_seq,integer,NULL 가능,null,3
 tour_inclusions,description,text,NOT NULL,null,4
 tour_inclusions,icon,text,NULL 가능,null,5
 tour_inclusions,category,text,NULL 가능,null,6
-tour_inclusions,created_at,timestamp without time zone,NULL 가능,now(),7
+tour_inclusions,created_at,timestamp with time zone,NULL 가능,now(),7
 tour_payment_pricing,payment_pricing_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_payment_pricing,tour_id,uuid,NOT NULL,null,2
 tour_payment_pricing,payment_method,text,NOT NULL,null,3
@@ -1105,14 +1313,8 @@ tour_payment_pricing,valid_from,date,NULL 가능,CURRENT_DATE,7
 tour_payment_pricing,valid_until,date,NULL 가능,null,8
 tour_payment_pricing,notes,text,NULL 가능,null,9
 tour_payment_pricing,is_active,boolean,NULL 가능,true,10
-tour_payment_pricing,created_at,timestamp without time zone,NULL 가능,CURRENT_TIMESTAMP,11
-tour_payment_pricing,updated_at,timestamp without time zone,NULL 가능,CURRENT_TIMESTAMP,12
-tour_price_backup,tour_code,text,NOT NULL,null,1
-tour_price_backup,tour_name,text,NOT NULL,null,2
-tour_price_backup,tour_capacity,integer,NULL 가능,null,3
-tour_price_backup,tour_vehicle,text,NULL 가능,null,4
-tour_price_backup,tour_type,text,NULL 가능,null,5
-tour_price_backup,price,numeric,NULL 가능,null,6
+tour_payment_pricing,created_at,timestamp with time zone,NULL 가능,CURRENT_TIMESTAMP,11
+tour_payment_pricing,updated_at,timestamp with time zone,NULL 가능,CURRENT_TIMESTAMP,12
 tour_pricing,pricing_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_pricing,tour_id,uuid,NOT NULL,null,2
 tour_pricing,min_guests,integer,NOT NULL,null,3
@@ -1128,8 +1330,8 @@ tour_pricing,season_key,USER-DEFINED,NULL 가능,'YEAR'::season_type,12
 tour_pricing,valid_from,date,NULL 가능,null,13
 tour_pricing,valid_until,date,NULL 가능,null,14
 tour_pricing,is_active,boolean,NULL 가능,true,15
-tour_pricing,created_at,timestamp without time zone,NULL 가능,now(),16
-tour_pricing,updated_at,timestamp without time zone,NULL 가능,now(),17
+tour_pricing,created_at,timestamp with time zone,NULL 가능,now(),16
+tour_pricing,updated_at,timestamp with time zone,NULL 가능,now(),17
 tour_pricing,default_payment_method,text,NULL 가능,'cash'::text,18
 tour_review,review_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_review,booking_id,uuid,NULL 가능,null,2
@@ -1141,8 +1343,8 @@ tour_review,comment,text,NULL 가능,null,7
 tour_review,verified_purchase,boolean,NULL 가능,true,8
 tour_review,helpful_count,integer,NULL 가능,0,9
 tour_review,images,jsonb,NULL 가능,null,10
-tour_review,created_at,timestamp without time zone,NULL 가능,now(),11
-tour_review,updated_at,timestamp without time zone,NULL 가능,now(),12
+tour_review,created_at,timestamp with time zone,NULL 가능,now(),11
+tour_review,updated_at,timestamp with time zone,NULL 가능,now(),12
 tour_schedule,schedule_id,uuid,NOT NULL,gen_random_uuid(),1
 tour_schedule,tour_id,uuid,NOT NULL,null,2
 tour_schedule,day_number,integer,NOT NULL,null,3
@@ -1156,7 +1358,7 @@ tour_schedule,duration_minutes,integer,NULL 가능,null,10
 tour_schedule,notes,jsonb,NULL 가능,null,11
 tour_schedule,optional,boolean,NULL 가능,false,12
 tour_schedule,order_changeable,boolean,NULL 가능,true,13
-tour_schedule,created_at,timestamp without time zone,NULL 가능,now(),14
+tour_schedule,created_at,timestamp with time zone,NULL 가능,now(),14
 tour_stats,tour_id,uuid,NULL 가능,null,1
 tour_stats,tour_name,text,NULL 가능,null,2
 tour_stats,total_reviews,bigint,NULL 가능,null,3
@@ -1177,7 +1379,7 @@ users,birth_date,date,NULL 가능,null,12
 users,passport_number,character varying,NULL 가능,null,16
 users,passport_expiry,date,NULL 가능,null,17
 users,status,character varying,NULL 가능,'pending'::character varying,18
-users,updated_at,timestamp without time zone,NULL 가능,now(),19
+users,updated_at,timestamp with time zone,NULL 가능,now(),19
 users,order_id,text,NULL 가능,null,20
 users,child_birth_dates,jsonb,NULL 가능,'[]'::jsonb,21
 v_customer_requests_stats,total_requests,bigint,NULL 가능,null,1
@@ -1197,20 +1399,3 @@ v_notification_stats,urgent_count,bigint,NULL 가능,null,6
 v_notification_stats,high_count,bigint,NULL 가능,null,7
 v_notification_stats,business_count,bigint,NULL 가능,null,8
 v_notification_stats,customer_count,bigint,NULL 가능,null,9
-vw_manager_cruise_car_report,id,uuid,NULL 가능,null,1
-vw_manager_cruise_car_report,reservation_id,uuid,NULL 가능,null,2
-vw_manager_cruise_car_report,usage_date,date,NULL 가능,null,3
-vw_manager_cruise_car_report,vehicle_number,text,NULL 가능,null,4
-vw_manager_cruise_car_report,seat_number,text,NULL 가능,null,5
-vw_manager_cruise_car_report,sht_category,text,NULL 가능,null,6
-vw_manager_cruise_car_report,created_at,timestamp with time zone,NULL 가능,null,7
-vw_manager_cruise_car_report,pickup_location,text,NULL 가능,null,8
-vw_manager_cruise_car_report,dropoff_location,text,NULL 가능,null,9
-vw_manager_cruise_car_report,pickup_datetime,date,NULL 가능,null,10
-vw_manager_cruise_car_report,booker_name,text,NULL 가능,null,11
-vw_manager_cruise_car_report,booker_email,text,NULL 가능,null,12
-vw_manager_cruise_car_report,pier_location,text,NULL 가능,null,13
-vw_manager_cruise_car_report,cruise_name,text,NULL 가능,null,14
-vw_manager_cruise_car_report,car_category,text,NULL 가능,null,15
-vw_manager_cruise_car_report,car_type,text,NULL 가능,null,16
-vw_manager_cruise_car_report,dispatch_code,text,NULL 가능,null,17
