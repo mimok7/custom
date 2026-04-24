@@ -44,6 +44,19 @@ function writeSessionCache(user: Record<string, unknown> | null, role: string | 
   }
 }
 
+/** 잘못된 리프레시 토큰 등으로 세션이 무효화될 때 localStorage sb-* 키 강제 정리 */
+function clearSupabaseStorageTokens() {
+  if (typeof window === 'undefined') return;
+  try {
+    const keysToRemove = Object.keys(localStorage).filter(
+      (k) => k.startsWith('sb-') && (k.endsWith('-auth-token') || k.endsWith('-auth-token-code-verifier'))
+    );
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    /* SSR 안전 */
+  }
+}
+
 export function primeAuthCache(user: Record<string, unknown> | null, role: string | null = 'guest') {
   writeSessionCache(user, role);
 }
@@ -141,7 +154,16 @@ export function useAuth(
         await applyAuth((session?.user ?? null) as Record<string, unknown> | null);
       } catch (err) {
         if (cancelled) return;
-        // 오류 발생 시 캐시된 사용자 유지 (강제 로그아웃 금지)
+        // Invalid Refresh Token 에러: 즉시 스토리지 정리 후 로그인으로 이동
+        const msg = (err as Error)?.message ?? '';
+        if (msg.includes('Invalid Refresh Token') || msg.includes('Refresh Token Not Found')) {
+          clearSupabaseStorageTokens();
+          writeSessionCache(null);
+          setState({ user: null, role: null, loading: false, error: null });
+          router.replace(redirectOnFail);
+          return;
+        }
+        // 그 외 일시적 오류 → 캐시된 사용자 유지 (강제 로그아웃 금지)
         setState((prev) => ({ ...prev, loading: false, error: err as Error }));
       }
     };
@@ -152,11 +174,12 @@ export function useAuth(
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       if (event === 'SIGNED_OUT') {
+        // 잘못된 리프레시 토큰 포함 모든 Supabase 토큰 강제 정리
+        clearSupabaseStorageTokens();
         writeSessionCache(null);
         setState({ user: null, role: null, loading: false, error: null });
-        if (loginRequired || requiredRoles?.length) {
-          router.replace(redirectOnFail);
-        }
+        // customer3는 전체 인증 필요 앱 → 항상 로그인 페이지로 이동
+        router.replace(redirectOnFail);
         return;
       }
       if (session?.user) {
