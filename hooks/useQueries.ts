@@ -132,17 +132,7 @@ export function useReservationAdditionalData(
         .filter((r) => r.re_type === 'cruise')
         .map((r) => r.re_id);
 
-      const [
-        quotesRes,
-        cruiseMetaRes,
-        cruisePriceRes,
-        cruiseCarPriceRes,
-        airportPriceRes,
-        hotelPriceRes,
-        rentPriceRes,
-        tourPriceRes,
-        paymentRes,
-      ] = await Promise.all([
+      const settled = await Promise.allSettled([
         quoteIds.length > 0
           ? supabase
               .from('quote')
@@ -188,6 +178,28 @@ export function useReservationAdditionalData(
           )
           .in('reservation_id', ids),
       ]);
+
+      // allSettled: 일부 쿼리 실패해도 나머지 데이터로 화면 렌더 유지
+      const pick = (idx: number): { data: unknown[] } => {
+        const r = settled[idx];
+        if (r.status === 'fulfilled') {
+          const v = r.value as { data?: unknown[] | null };
+          return { data: v?.data ?? [] };
+        }
+        // eslint-disable-next-line no-console
+        console.warn('[useReservationAdditionalData] partial query failed:', r.reason);
+        return { data: [] };
+      };
+
+      const quotesRes = pick(0) as { data: { id: string; title?: string; status: string }[] };
+      const cruiseMetaRes = pick(1) as { data: Record<string, unknown>[] };
+      const cruisePriceRes = pick(2);
+      const cruiseCarPriceRes = pick(3);
+      const airportPriceRes = pick(4);
+      const hotelPriceRes = pick(5);
+      const rentPriceRes = pick(6);
+      const tourPriceRes = pick(7);
+      const paymentRes = pick(8);
 
       // 견적
       const quotesById: Record<string, { title: string; status: string }> = {};

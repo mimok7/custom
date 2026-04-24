@@ -381,28 +381,36 @@ export async function submitReservation(
   serviceType: string,
   payload: Record<string, unknown>,
 ): Promise<SubmitResult> {
-  const { user, error } = await getFastAuthUserWithMemberRole();
-  if (error || !user?.id) {
-    const message = error instanceof Error ? error.message : '사용자 정보를 가져올 수 없습니다.';
+  try {
+    const { user, error } = await getFastAuthUserWithMemberRole();
+    if (error || !user?.id) {
+      const message = error instanceof Error ? error.message : '사용자 정보를 가져올 수 없습니다.';
+      return { reservationId: null, error: message };
+    }
+
+    // reservation.re_type 스키마에 맞춰 저장 타입 정규화
+    const normalizedType = serviceType === 'ticket' ? 'tour' : serviceType;
+    const { id, quoteId, error: createErr } = await createReservation(String(user.id), normalizedType);
+    if (createErr || !id) return { reservationId: null, error: createErr ?? '예약 생성 실패' };
+
+    const payloadWithUser = {
+      ...payload,
+      userId: String(user.id),
+      quoteId,
+    };
+
+    const saveFn = SAVE_MAP[serviceType];
+    if (saveFn) {
+      const detailErr = await saveFn(id, payloadWithUser);
+      if (detailErr) return { reservationId: id, error: detailErr };
+    }
+
+    return { reservationId: id, error: null };
+  } catch (err) {
+    // 예상치 못한 throw도 {error} 형태로 정규화 → 호출자가 항상 안전하게 처리 가능
+    // eslint-disable-next-line no-console
+    console.error('[submitReservation] unexpected error:', err);
+    const message = err instanceof Error ? err.message : '예약 처리 중 알 수 없는 오류가 발생했습니다.';
     return { reservationId: null, error: message };
   }
-
-  // reservation.re_type 스키마에 맞춰 저장 타입 정규화
-  const normalizedType = serviceType === 'ticket' ? 'tour' : serviceType;
-  const { id, quoteId, error: createErr } = await createReservation(String(user.id), normalizedType);
-  if (createErr || !id) return { reservationId: null, error: createErr ?? '예약 생성 실패' };
-
-  const payloadWithUser = {
-    ...payload,
-    userId: String(user.id),
-    quoteId,
-  };
-
-  const saveFn = SAVE_MAP[serviceType];
-  if (saveFn) {
-    const detailErr = await saveFn(id, payloadWithUser);
-    if (detailErr) return { reservationId: id, error: detailErr };
-  }
-
-  return { reservationId: id, error: null };
 }
