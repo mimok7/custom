@@ -87,16 +87,23 @@ export function useAuth(
   loginRequired = false,
 ) {
   const router = useRouter();
-  const cached = typeof window !== 'undefined' ? readSessionCache() : null;
+  // SSR/클라이언트 하이드레이션 불일치 방지: 항상 loading:true 로 초기화
+  // (SSR: window 없음 → loading:true, 클라이언트: useEffect에서 캐시 적용)
   const [state, setState] = useState<AuthState>({
-    user: cached?.user ?? null,
-    role: cached?.role ?? null,
-    loading: !cached, // 캐시가 있으면 즉시 사용 → 로딩 깜빡임 방지
+    user: null,
+    role: null,
+    loading: true,
     error: null,
   });
 
   useEffect(() => {
     let cancelled = false;
+
+    // 클라이언트에서만 캐시 읽기 (SSR 이후 첫 번째 효과)
+    const cached = readSessionCache();
+    if (cached?.user && !cancelled) {
+      setState({ user: cached.user, role: cached.role, loading: false, error: null });
+    }
 
     const fetchRole = async (userId: string): Promise<string> => {
       try {
@@ -113,9 +120,10 @@ export function useAuth(
 
     const applyAuth = async (user: Record<string, unknown> | null) => {
       if (cancelled) return;
+      const latestCached = readSessionCache();
 
       if (!user) {
-        if (!cached) {
+        if (!latestCached) {
           // 캐시도 없고 세션도 없을 때만 로그인 페이지로 이동
           writeSessionCache(null);
           setState({ user: null, role: null, loading: false, error: null });
@@ -130,7 +138,7 @@ export function useAuth(
       }
 
       // 사용자 있음 → 역할 조회 (요구된 경우에만)
-      let role: string | null = cached?.role ?? null;
+      let role: string | null = latestCached?.role ?? null;
       if (requiredRoles?.length || !role) {
         role = await fetchRole(user.id as string);
       }
