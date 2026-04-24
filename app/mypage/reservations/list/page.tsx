@@ -48,7 +48,10 @@ export default function ReservationListPage() {
     cruise: 0, airport: 1, tour: 2, rentcar: 3, hotel: 4, package: 5, ticket: 6, car: 7, sht_car: 8, sht: 8,
   };
 
-  const allReservations = reservations ?? [];
+  // cruise_car / car 는 크루즈 상세보기에 포함되므로 목록에서 제외
+  const allReservations = (reservations ?? []).filter(
+    r => r.re_type !== 'cruise_car' && r.re_type !== 'car'
+  );
   const quotesById = additionalData?.quotesById ?? {};
 
   // 견적별 그룹핑
